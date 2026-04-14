@@ -1,0 +1,111 @@
+{
+  "entities": {
+    "Wishlist": {
+      "title": "Wishlist",
+      "description": "A collaborative collection of products.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the wishlist."
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the wishlist owner."
+        },
+        "ownerEmail": {
+          "type": "string",
+          "description": "The email of the wishlist owner."
+        },
+        "collaboratorEmails": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of emails invited to collaborate."
+        },
+        "itemIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of product IDs in the wishlist."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the wishlist was created."
+        }
+      },
+      "required": ["name", "ownerId", "ownerEmail", "itemIds", "createdAt"]
+    },
+    "BespokeRequest": {
+      "title": "Bespoke Request",
+      "description": "A request for custom-made furniture.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "userName": { "type": "string" },
+        "description": { "type": "string" },
+        "budget": { "type": "number" },
+        "dimensions": { "type": "string" },
+        "materialPreferences": { "type": "string" },
+        "status": { 
+          "type": "string",
+          "enum": ["pending", "reviewed", "quoted", "in-progress", "completed"]
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "attachments": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["userId", "userEmail", "userName", "description", "status", "createdAt"]
+    },
+    "LoyaltyProfile": {
+      "title": "Loyalty Profile",
+      "description": "User's loyalty points and tier information.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "points": { "type": "number" },
+        "tier": { 
+          "type": "string", 
+          "enum": ["Bronze", "Silver", "Gold", "Platinum"] 
+        },
+        "lifetimePoints": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "points", "tier", "lifetimePoints", "updatedAt"]
+    },
+    "LoyaltyTransaction": {
+      "title": "Loyalty Transaction",
+      "description": "History of points earned or spent.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["earn", "redeem"] },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "amount", "type", "description", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/wishlists/{wishlistId}": {
+      "schema": "Wishlist",
+      "description": "Collection of collaborative wishlists."
+    },
+    "/bespoke_requests/{requestId}": {
+      "schema": "BespokeRequest",
+      "description": "Collection of bespoke furniture requests."
+    },
+    "/loyalty_profiles/{userId}": {
+      "schema": "LoyaltyProfile",
+      "description": "User loyalty profiles."
+    },
+    "/loyalty_transactions/{transactionId}": {
+      "schema": "LoyaltyTransaction",
+      "description": "History of loyalty transactions."
+    }
+  }
+}

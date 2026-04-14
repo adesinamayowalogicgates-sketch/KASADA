@@ -1,0 +1,128 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: wishlists
+    // Document ID: auto-generated
+    // Fields:
+    //   - name: string (required, 1-100 chars)
+    //   - ownerId: string (required, immutable)
+    //   - ownerEmail: string (required, immutable)
+    //   - collaboratorEmails: list of strings (optional, max 10)
+    //   - itemIds: list of strings (required, max 50)
+    //   - createdAt: timestamp (required, immutable)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(wishlistData) {
+      return isAuthenticated() && request.auth.uid == wishlistData.ownerId;
+    }
+
+    function isCollaborator(wishlistData) {
+      return isAuthenticated() && 
+             (request.auth.token.email in wishlistData.collaboratorEmails || 
+              request.auth.uid == wishlistData.ownerId);
+    }
+
+    function isValidWishlist(data) {
+      return data.keys().hasAll(['name', 'ownerId', 'ownerEmail', 'itemIds', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.ownerId is string &&
+             data.ownerEmail is string &&
+             data.itemIds is list && data.itemIds.size() <= 50 &&
+             data.createdAt is timestamp &&
+             (!('collaboratorEmails' in data) || (data.collaboratorEmails is list && data.collaboratorEmails.size() <= 10));
+    }
+
+    function isRecent(time) {
+      return time > request.time - duration.value(5, 'm') &&
+             time <= request.time;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+             (request.auth.token.email == "adesinamayowa.logicgates@gmail.com" && request.auth.token.email_verified == true);
+    }
+
+    function isValidBespokeRequest(data) {
+      return data.keys().hasAll(['userId', 'userEmail', 'userName', 'description', 'status', 'createdAt']) &&
+             data.userId is string &&
+             data.userEmail is string &&
+             data.userName is string &&
+             data.description is string && data.description.size() > 0 && data.description.size() <= 2000 &&
+             data.status in ['pending', 'reviewed', 'quoted', 'in-progress', 'completed'] &&
+             data.createdAt is timestamp &&
+             (!('budget' in data) || data.budget is number) &&
+             (!('dimensions' in data) || data.dimensions is string) &&
+             (!('materialPreferences' in data) || data.materialPreferences is string) &&
+             (!('attachments' in data) || data.attachments is list);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /wishlists/{wishlistId} {
+      allow read: if isCollaborator(resource.data);
+      
+      allow create: if isAuthenticated() && 
+                      isValidWishlist(request.resource.data) &&
+                      request.resource.data.ownerId == request.auth.uid &&
+                      request.resource.data.ownerEmail == request.auth.token.email &&
+                      isRecent(request.resource.data.createdAt);
+      
+      allow update: if isCollaborator(resource.data) &&
+                      isValidWishlist(request.resource.data) &&
+                      request.resource.data.ownerId == resource.data.ownerId &&
+                      request.resource.data.ownerEmail == resource.data.ownerEmail &&
+                      request.resource.data.createdAt == resource.data.createdAt &&
+                      // Only owner can change collaborators
+                      (request.resource.data.collaboratorEmails == resource.data.collaboratorEmails || isOwner(resource.data));
+      
+      allow delete: if isOwner(resource.data);
+    }
+
+    match /bespoke_requests/{requestId} {
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
+      
+      allow create: if isAuthenticated() && 
+                      isValidBespokeRequest(request.resource.data) &&
+                      request.resource.data.userId == request.auth.uid &&
+                      request.resource.data.userEmail == request.auth.token.email &&
+                      request.resource.data.status == 'pending' &&
+                      isRecent(request.resource.data.createdAt);
+      
+      allow update: if isAdmin();
+      
+      allow delete: if isAdmin();
+    }
+
+    match /loyalty_profiles/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      // In a real app, only system/admin writes. For demo, we allow initial creation.
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    match /loyalty_transactions/{transactionId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Default deny
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

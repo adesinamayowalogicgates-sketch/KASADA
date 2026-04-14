@@ -1,0 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", serif;
+
+  --color-brand-onyx: #0a0a0a;
+  --color-brand-alabaster: #fafaf9;
+  --color-brand-copper: #b45309;
+  --color-brand-slate: #475569;
+  --color-brand-border: #e7e5e4;
+}
+
+@layer base {
+  body {
+    @apply bg-brand-alabaster text-brand-onyx font-sans antialiased selection:bg-brand-copper selection:text-white;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif tracking-tight;
+  }
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.glass-dark {
+  @apply bg-brand-onyx/80 backdrop-blur-xl border border-white/10;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.mask-fade-bottom {
+  mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-brand-alabaster;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-brand-onyx/20 rounded-full hover:bg-brand-onyx/40 transition-colors;
+}
