@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { 
   Search, 
@@ -73,6 +73,60 @@ import {
   OperationType
 } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
+
+// --- Auth Context ---
+
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  login: () => Promise<void>;
+  logout: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const login = async () => {
+    try {
+      await loginWithGoogle();
+    } catch (error) {
+      console.error("Login Error:", error);
+    }
+  };
+
+  const logoutAction = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout Error:", error);
+    }
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout: logoutAction }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}
 
 // --- Context ---
 
@@ -222,7 +276,7 @@ function DealsCarousel() {
 function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const { user, login, logout } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { cart } = useCart();
   const location = useLocation();
@@ -230,15 +284,7 @@ function Navbar() {
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
-    
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-    });
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      unsubscribe();
-    };
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
@@ -280,55 +326,62 @@ function Navbar() {
             <div className="relative">
               <button 
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="w-8 h-8 rounded-full overflow-hidden border border-brand-onyx/10 hover:border-brand-copper transition-all"
+                className="w-10 h-10 rounded-full overflow-hidden border-2 border-brand-onyx/10 hover:border-brand-copper transition-all p-0.5"
               >
-                <img src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}`} alt={user.displayName || ''} className="w-full h-full object-cover" />
+                <div className="w-full h-full rounded-full overflow-hidden">
+                  <img 
+                    src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}`} 
+                    alt={user.displayName || ''} 
+                    className="w-full h-full object-cover" 
+                  />
+                </div>
               </button>
 
               <AnimatePresence>
                 {isUserMenuOpen && (
                   <>
                     <div 
-                      className="fixed inset-0 z-40" 
+                      className="fixed inset-0 z-[60]" 
                       onClick={() => setIsUserMenuOpen(false)}
                     />
                     <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute right-0 mt-4 w-64 bg-white rounded-2xl shadow-2xl border border-brand-onyx/5 z-50 overflow-hidden"
+                      initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                      className="absolute right-0 mt-4 w-72 bg-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-brand-onyx/5 z-[70] overflow-hidden origin-top-right"
                     >
-                      <div className="p-6 border-b border-brand-onyx/5">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-brand-copper mb-1">Member</p>
-                        <p className="font-serif font-bold text-brand-onyx truncate">{user.displayName}</p>
-                        <p className="text-[10px] text-brand-onyx/40 truncate">{user.email}</p>
+                      <div className="p-8 border-b border-brand-onyx/5 bg-brand-alabaster/50">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-brand-copper mb-3 block">Member</span>
+                        <h4 className="font-serif font-bold text-xl text-brand-onyx truncate mb-1">{user.displayName}</h4>
+                        <p className="text-[10px] text-brand-onyx/40 truncate font-mono">{user.email}</p>
                       </div>
-                      <div className="p-2">
-                        <Link 
-                          to="/loyalty" 
-                          className="flex items-center space-x-3 p-3 rounded-xl hover:bg-brand-alabaster transition-colors group"
-                          onClick={() => setIsUserMenuOpen(false)}
-                        >
-                          <Trophy size={16} className="text-brand-onyx/40 group-hover:text-brand-copper" />
-                          <span className="text-xs font-bold uppercase tracking-wider">Loyalty Program</span>
-                        </Link>
-                        <Link 
-                          to="/wishlist" 
-                          className="flex items-center space-x-3 p-3 rounded-xl hover:bg-brand-alabaster transition-colors group"
-                          onClick={() => setIsUserMenuOpen(false)}
-                        >
-                          <Heart size={16} className="text-brand-onyx/40 group-hover:text-brand-copper" />
-                          <span className="text-xs font-bold uppercase tracking-wider">My Wishlist</span>
-                        </Link>
+                      <div className="p-3 space-y-1">
+                        {[
+                          { to: '/loyalty', icon: Trophy, label: 'Loyalty Rewards' },
+                          { to: '/wishlist', icon: Heart, label: 'My Wishlist' },
+                          { to: '/orders', icon: Box, label: 'Order History' },
+                        ].map((item) => (
+                          <Link 
+                            key={item.label}
+                            to={item.to} 
+                            className="flex items-center space-x-3 p-4 rounded-2xl hover:bg-brand-alabaster transition-all group"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <item.icon size={18} className="text-brand-onyx/30 group-hover:text-brand-copper transition-colors" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-onyx/70 group-hover:text-brand-onyx">
+                              {item.label}
+                            </span>
+                          </Link>
+                        ))}
                         <button 
                           onClick={() => {
                             logout();
                             setIsUserMenuOpen(false);
                           }}
-                          className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-red-50 transition-colors group text-red-500"
+                          className="w-full flex items-center space-x-3 p-4 rounded-2xl hover:bg-red-50 transition-all group text-red-500"
                         >
-                          <LogOut size={16} />
-                          <span className="text-xs font-bold uppercase tracking-wider">Sign Out</span>
+                          <LogOut size={18} />
+                          <span className="text-[10px] font-black uppercase tracking-widest">Sign Out</span>
                         </button>
                       </div>
                     </motion.div>
@@ -337,18 +390,12 @@ function Navbar() {
               </AnimatePresence>
             </div>
           ) : (
-            <button 
-              onClick={async () => {
-                try {
-                  await loginWithGoogle();
-                } catch (error) {
-                  console.error("Login failed:", error);
-                }
-              }}
+            <Link 
+              to="/login"
               className="p-2 hover:text-brand-copper transition-colors"
             >
               <UserIcon size={18} />
-            </button>
+            </Link>
           )}
           <button 
             className="md:hidden p-2"
@@ -384,7 +431,7 @@ function Navbar() {
                   {item}
                 </Link>
               ))}
-              {user && (
+              {user ? (
                 <button 
                   onClick={() => {
                     logout();
@@ -394,6 +441,14 @@ function Navbar() {
                 >
                   Sign Out
                 </button>
+              ) : (
+                <Link 
+                  to="/login"
+                  className="text-5xl font-serif font-bold text-brand-onyx"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Sign In
+                </Link>
               )}
             </div>
             <div className="pt-12 border-t border-brand-onyx/10">
@@ -1549,8 +1604,16 @@ function BundleDetail() {
 }
 
 function Login() {
+  const { user, login } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/loyalty');
+    }
+  }, [user, navigate]);
 
   return (
     <motion.div 
@@ -1617,7 +1680,8 @@ function Login() {
           )}
 
           <button 
-            onClick={() => loginWithGoogle()}
+            type="button"
+            onClick={() => login()}
             className="w-full bg-brand-onyx text-white py-5 rounded-full font-bold hover:bg-brand-copper transition-all duration-500 shadow-xl"
           >
             {isLogin ? 'Sign In' : 'Create Account'}
@@ -1628,7 +1692,7 @@ function Login() {
           <p className="text-sm text-brand-slate mb-6">Or continue with</p>
           <div className="flex justify-center space-x-4">
             <button 
-              onClick={() => loginWithGoogle()}
+              onClick={() => login()}
               className="w-12 h-12 rounded-full bg-brand-onyx/5 flex items-center justify-center hover:bg-brand-onyx/10 transition-colors"
             >
               <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
@@ -1642,10 +1706,13 @@ function Login() {
         <div className="mt-12 pt-8 border-t border-brand-onyx/5 text-center">
           <button 
             onClick={() => setIsLogin(!isLogin)}
-            className="text-sm font-medium text-brand-slate hover:text-brand-onyx transition-colors"
+            className="text-sm font-medium text-brand-slate hover:text-brand-onyx transition-colors mb-4 block w-full text-center"
           >
             {isLogin ? "Don't have an account? Create one" : "Already have an account? Sign in"}
           </button>
+          <p className="text-[10px] text-brand-slate/60 leading-relaxed italic">
+            Having trouble? Try opening the app in a new tab if you're in the AI Studio preview.
+          </p>
         </div>
       </div>
     </motion.div>
@@ -2060,25 +2127,16 @@ function WishlistPage() {
 }
 
 function LoyaltyDashboard() {
-  const [user, setUser] = useState<User | null>(null);
+  const { user, logout } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      if (!u) {
-        setLoading(false);
-        setProfile(null);
-        setTransactions([]);
-      }
-    });
-    return () => unsubscribeAuth();
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     // Listen to profile
     const profileRef = doc(db, 'loyalty_profiles', user.uid);
@@ -2559,41 +2617,43 @@ function BespokePortal() {
 export default function App() {
   return (
     <Router>
-      <CartProvider>
-        <div className="min-h-screen flex flex-col selection:bg-brand-copper selection:text-white">
-          <Navbar />
-          <div className="flex-grow">
-            <AnimatePresence mode="wait">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/collections" element={<Collections />} />
-                <Route path="/bundles" element={<Bundles />} />
-                <Route path="/bundles/:id" element={<BundleDetail />} />
-                <Route path="/product/:id" element={<ProductDetail />} />
-                <Route path="/deals" element={<PrototypePage title="Exclusive Deals" description="Limited time offers on our most coveted handcrafted pieces." />} />
-                <Route path="/room-visualizer" element={<PrototypePage title="Room Visualizer" description="Experience our furniture in your own space using AR and 3D modeling." />} />
-                <Route path="/search" element={<SearchPage />} />
-                <Route path="/designers" element={<PrototypePage title="Our Designers" description="Meet the visionaries behind Nigeria's most iconic contemporary furniture." />} />
-                <Route path="/b2b" element={<PrototypePage title="KASADA for Business" description="Tailored solutions for hotels, offices, and large-scale residential projects." />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/wishlist" element={<WishlistPage />} />
-                <Route path="/bespoke" element={<BespokePortal />} />
-                <Route path="/loyalty" element={<LoyaltyDashboard />} />
-                <Route path="/account" element={<Login />} />
-                <Route path="/shipping" element={<PrototypePage title="Shipping & Logistics" description="Transparent, trackable delivery for bulky items across all 36 states." />} />
-                <Route path="/returns" element={<PrototypePage title="Returns & Escrow" description="Our 7-day inspection period ensures you only pay for what you love." />} />
-                <Route path="/faq" element={<PrototypePage title="Frequently Asked Questions" description="Everything you need to know about shopping with KASADA." />} />
-                <Route path="/contact" element={<PrototypePage title="Contact Us" description="Our concierge team is here to help with your design journey." />} />
-                <Route path="/privacy" element={<PrototypePage title="Privacy Policy" description="How we protect your data and respect your digital space." />} />
-                <Route path="/terms" element={<PrototypePage title="Terms of Service" description="The fine print, made clear and fair for everyone." />} />
-                <Route path="/brand-guidelines" element={<BrandGuidelines />} />
-              </Routes>
-            </AnimatePresence>
+      <AuthProvider>
+        <CartProvider>
+          <div className="min-h-screen flex flex-col selection:bg-brand-copper selection:text-white">
+            <Navbar />
+            <div className="flex-grow">
+              <AnimatePresence mode="wait">
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/collections" element={<Collections />} />
+                  <Route path="/bundles" element={<Bundles />} />
+                  <Route path="/bundles/:id" element={<BundleDetail />} />
+                  <Route path="/product/:id" element={<ProductDetail />} />
+                  <Route path="/deals" element={<PrototypePage title="Exclusive Deals" description="Limited time offers on our most coveted handcrafted pieces." />} />
+                  <Route path="/room-visualizer" element={<PrototypePage title="Room Visualizer" description="Experience our furniture in your own space using AR and 3D modeling." />} />
+                  <Route path="/search" element={<SearchPage />} />
+                  <Route path="/designers" element={<PrototypePage title="Our Designers" description="Meet the visionaries behind Nigeria's most iconic contemporary furniture." />} />
+                  <Route path="/b2b" element={<PrototypePage title="KASADA for Business" description="Tailored solutions for hotels, offices, and large-scale residential projects." />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/wishlist" element={<WishlistPage />} />
+                  <Route path="/bespoke" element={<BespokePortal />} />
+                  <Route path="/loyalty" element={<LoyaltyDashboard />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/shipping" element={<PrototypePage title="Shipping & Logistics" description="Transparent, trackable delivery for bulky items across all 36 states." />} />
+                  <Route path="/returns" element={<PrototypePage title="Returns & Escrow" description="Our 7-day inspection period ensures you only pay for what you love." />} />
+                  <Route path="/faq" element={<PrototypePage title="Frequently Asked Questions" description="Everything you need to know about shopping with KASADA." />} />
+                  <Route path="/contact" element={<PrototypePage title="Contact Us" description="Our concierge team is here to help with your design journey." />} />
+                  <Route path="/privacy" element={<PrototypePage title="Privacy Policy" description="How we protect your data and respect your digital space." />} />
+                  <Route path="/terms" element={<PrototypePage title="Terms of Service" description="The fine print, made clear and fair for everyone." />} />
+                  <Route path="/brand-guidelines" element={<BrandGuidelines />} />
+                </Routes>
+              </AnimatePresence>
+            </div>
+            <Footer />
           </div>
-          <Footer />
-        </div>
-      </CartProvider>
+        </CartProvider>
+      </AuthProvider>
     </Router>
   );
 }
