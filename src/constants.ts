@@ -19,7 +19,7 @@ export const CATEGORIES: Category[] = [
     id: '3',
     name: 'Dining Room',
     slug: 'dining-room',
-    image: 'https://images.unsplash.com/photo-1534349762230-e0cadf78f5db?q=80&w=2070&auto=format&fit=crop',
+    image: 'https://i.imgur.com/MvP2FNG.jpg',
     description: 'Dining tables, chairs, and sideboards.'
   },
   {
@@ -33,7 +33,7 @@ export const CATEGORIES: Category[] = [
     id: '5',
     name: 'Decor',
     slug: 'decor',
-    image: 'https://images.unsplash.com/photo-1513519247354-497a8891112c?q=80&w=2070&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1534073828943-f801091bb18c?q=80&w=2070&auto=format&fit=crop',
     description: 'Mirrors, lighting, and artisanal accents.'
   }
 ];

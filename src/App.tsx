@@ -40,7 +40,8 @@ import {
   Trophy,
   Gift,
   Zap,
-  History
+  History,
+  LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import { cn } from './lib/utils';
@@ -222,6 +223,7 @@ function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { cart } = useCart();
   const location = useLocation();
 
@@ -275,23 +277,74 @@ function Navbar() {
             )}
           </Link>
           {user ? (
-            <div className="flex items-center space-x-4">
-              <Link to="/wishlist" className="p-2 hover:text-brand-copper transition-colors">
-                <Heart size={18} />
-              </Link>
-              <Link to="/loyalty" className="p-2 hover:text-brand-copper transition-colors">
-                <Trophy size={18} />
-              </Link>
-              <Link 
-                to="/loyalty"
+            <div className="relative">
+              <button 
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="w-8 h-8 rounded-full overflow-hidden border border-brand-onyx/10 hover:border-brand-copper transition-all"
               >
                 <img src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}`} alt={user.displayName || ''} className="w-full h-full object-cover" />
-              </Link>
+              </button>
+
+              <AnimatePresence>
+                {isUserMenuOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setIsUserMenuOpen(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute right-0 mt-4 w-64 bg-white rounded-2xl shadow-2xl border border-brand-onyx/5 z-50 overflow-hidden"
+                    >
+                      <div className="p-6 border-b border-brand-onyx/5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-brand-copper mb-1">Member</p>
+                        <p className="font-serif font-bold text-brand-onyx truncate">{user.displayName}</p>
+                        <p className="text-[10px] text-brand-onyx/40 truncate">{user.email}</p>
+                      </div>
+                      <div className="p-2">
+                        <Link 
+                          to="/loyalty" 
+                          className="flex items-center space-x-3 p-3 rounded-xl hover:bg-brand-alabaster transition-colors group"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          <Trophy size={16} className="text-brand-onyx/40 group-hover:text-brand-copper" />
+                          <span className="text-xs font-bold uppercase tracking-wider">Loyalty Program</span>
+                        </Link>
+                        <Link 
+                          to="/wishlist" 
+                          className="flex items-center space-x-3 p-3 rounded-xl hover:bg-brand-alabaster transition-colors group"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          <Heart size={16} className="text-brand-onyx/40 group-hover:text-brand-copper" />
+                          <span className="text-xs font-bold uppercase tracking-wider">My Wishlist</span>
+                        </Link>
+                        <button 
+                          onClick={() => {
+                            logout();
+                            setIsUserMenuOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-red-50 transition-colors group text-red-500"
+                        >
+                          <LogOut size={16} />
+                          <span className="text-xs font-bold uppercase tracking-wider">Sign Out</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
           ) : (
             <button 
-              onClick={() => loginWithGoogle()}
+              onClick={async () => {
+                try {
+                  await loginWithGoogle();
+                } catch (error) {
+                  console.error("Login failed:", error);
+                }
+              }}
               className="p-2 hover:text-brand-copper transition-colors"
             >
               <UserIcon size={18} />
@@ -505,7 +558,7 @@ function ProductCard({ product }: ProductCardProps) {
             )}
           </div>
 
-          <div className="absolute inset-0 bg-brand-onyx/20 lg:bg-brand-onyx/40 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center space-x-4">
+          <div className="absolute inset-0 bg-brand-onyx/20 lg:bg-brand-onyx/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center space-x-4">
             <motion.button 
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -746,7 +799,7 @@ function Home() {
                 <img 
                   src={cat.image} 
                   alt={cat.name} 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 bg-brand-onyx/5"
                   referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-brand-onyx/80 via-transparent to-transparent flex flex-col justify-end p-6 sm:p-8">
