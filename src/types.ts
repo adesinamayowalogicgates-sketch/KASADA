@@ -47,6 +47,15 @@ export interface Bundle {
   category: string;
 }
 
+export interface Designer {
+  id: string;
+  name: string;
+  bio: string;
+  image: string;
+  styles: string[];
+  notableWorks: string[];
+}
+
 export interface User {
   id: string;
   name: string;

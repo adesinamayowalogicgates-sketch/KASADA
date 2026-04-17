@@ -45,8 +45,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import { cn } from './lib/utils';
-import { CATEGORIES, PRODUCTS, BUNDLES } from './constants';
-import { Product, Bundle } from './types';
+import { CATEGORIES, PRODUCTS, BUNDLES, DESIGNERS } from './constants';
+import { Product, Bundle, Designer } from './types';
 import { getCompleteTheLook } from './services/geminiService';
 import { 
   auth, 
@@ -1889,7 +1889,10 @@ function About() {
 }
 
 function Cart() {
-  const { cart, removeFromCart } = useCart();
+  const { cart, removeFromCart, clearCart, showToast } = useCart();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const cartItems = cart.map(item => {
     const product = PRODUCTS.find(p => p.id === item.productId);
@@ -1897,6 +1900,52 @@ function Cart() {
   }).filter(item => item.product !== undefined);
 
   const subtotal = cartItems.reduce((acc, item) => acc + (item.product!.price * item.quantity), 0);
+
+  const handleCheckout = async () => {
+    if (!user) {
+      showToast("Please login to complete your order");
+      navigate('/login');
+      return;
+    }
+
+    if (cartItems.length === 0) return;
+
+    setIsProcessing(true);
+    try {
+      const orderData = {
+        userId: user.uid,
+        items: cartItems.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          priceAtTime: item.product!.price,
+          assembly: item.assembly
+        })),
+        totalAmount: subtotal,
+        status: 'Confirmed',
+        createdAt: Timestamp.now(),
+        shippingAddress: 'Concierge Managed'
+      };
+
+      const orderRef = await addDoc(collection(db, 'orders'), orderData);
+      
+      // Earn points for the purchase
+      await addDoc(collection(db, 'loyalty_transactions'), {
+        userId: user.uid,
+        amount: Math.floor(subtotal / 1000), // 1 point per ₦1000
+        type: 'earn',
+        description: `Order #${orderRef.id.slice(-6).toUpperCase()}`,
+        createdAt: Timestamp.now()
+      });
+
+      clearCart();
+      showToast("Order placed successfully!");
+      navigate('/orders');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'orders');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <motion.div 
@@ -1922,6 +1971,7 @@ function Cart() {
               <button 
                 onClick={() => removeFromCart(item.productId)}
                 className="text-brand-slate hover:text-red-500 transition-colors"
+                disabled={isProcessing}
               >
                 <X size={20} />
               </button>
@@ -1951,10 +2001,14 @@ function Cart() {
             </div>
           </div>
           <button 
-            disabled={cartItems.length === 0}
-            className="w-full bg-brand-copper text-white py-4 sm:py-5 rounded-full font-bold hover:bg-white hover:text-brand-onyx transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={cartItems.length === 0 || isProcessing}
+            onClick={handleCheckout}
+            className={cn(
+              "w-full py-4 sm:py-5 rounded-full font-bold transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed",
+              isProcessing ? "bg-brand-copper/50 text-white cursor-wait" : "bg-brand-copper text-white hover:bg-white hover:text-brand-onyx"
+            )}
           >
-            Proceed to Checkout
+            {isProcessing ? "Processing Order..." : "Proceed to Checkout"}
           </button>
         </div>
       </div>
@@ -2356,6 +2410,556 @@ function LoyaltyDashboard() {
   );
 }
 
+function ExclusiveDeals() {
+  // Filter products for deals - using a simulated logic
+  const dealProducts = PRODUCTS.slice(0, 4).map(p => ({
+    ...p,
+    discountPercentage: 25,
+    dealPrice: p.price * 0.75
+  }));
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="pt-24 sm:pt-40"
+    >
+      {/* Editorial Flash Sale Header */}
+      <div className="bg-brand-onyx text-white py-24 mb-24 overflow-hidden relative">
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-12">
+            <div className="max-w-2xl text-center md:text-left">
+              <div className="inline-flex items-center space-x-3 bg-brand-copper/20 text-brand-copper px-4 py-2 rounded-full mb-8">
+                <Zap size={16} fill="currentColor" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Limited Time Event</span>
+              </div>
+              <h1 className="text-6xl md:text-8xl font-serif font-black mb-8 leading-[0.9] tracking-tighter">
+                THE <br/>FLASH <br/><span className="text-brand-copper">DROP.</span>
+              </h1>
+              <p className="text-xl text-white/60 font-light leading-relaxed mb-12">
+                Curated artisanal pieces at unprecedented value. Available until stocks last.
+              </p>
+              <div className="flex items-center justify-center md:justify-start space-x-8">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Ends In</p>
+                  <p className="text-3xl font-mono font-bold tracking-tighter">14 : 22 : 09</p>
+                </div>
+                <div className="w-px h-12 bg-white/10" />
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Status</p>
+                  <p className="text-3xl font-sans font-black text-brand-copper">ACTIVE</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="relative group">
+              <div className="w-80 h-80 md:w-96 md:h-96 rounded-full border border-white/10 flex items-center justify-center p-8 animate-pulse">
+                 <div className="text-center">
+                   <p className="text-sm uppercase tracking-[0.5em] mb-4">Upto</p>
+                   <p className="text-9xl font-serif font-black text-brand-copper">40</p>
+                   <p className="text-sm uppercase tracking-[0.5em] mt-4">% OFF</p>
+                 </div>
+              </div>
+              <div className="absolute -top-10 -right-10 w-24 h-24 bg-brand-copper rounded-full flex items-center justify-center rotate-12 group-hover:rotate-45 transition-transform duration-700">
+                <span className="text-white font-black text-xs uppercase text-center">Final<br/>Markdowns</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Background Text Marquee */}
+        <div className="absolute top-1/2 -translate-y-1/2 left-0 w-full opacity-[0.03] pointer-events-none select-none overflow-hidden whitespace-nowrap">
+           <div className="text-[30vw] font-serif font-black animate-marquee inline-block">
+             EXCLUSIVEDEALS&nbsp;&nbsp;&nbsp;EXCLUSIVEDEALS&nbsp;&nbsp;&nbsp;
+           </div>
+        </div>
+      </div>
+
+      {/* Deals Grid */}
+      <div className="max-w-7xl mx-auto px-6 mb-32">
+        <h2 className="text-3xl font-serif font-bold mb-16 flex items-center justify-between">
+          <span>Active Markdowns</span>
+          <span className="text-sm font-sans font-light text-brand-slate uppercase tracking-widest">Showing {dealProducts.length} results</span>
+        </h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+          {dealProducts.map(product => (
+            <div key={product.id} className="group flex flex-col h-full">
+              <div className="aspect-[4/5] rounded-[2rem] overflow-hidden mb-6 relative">
+                 <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" referrerPolicy="no-referrer" />
+                 <div className="absolute top-6 left-6 bg-brand-copper text-white text-[10px] font-black px-4 py-2 rounded-full shadow-lg">
+                   -{product.discountPercentage}%
+                 </div>
+                 <Link 
+                   to={`/product/${product.id}`}
+                   className="absolute inset-0 bg-brand-onyx/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                 >
+                   <button className="bg-white text-brand-onyx px-8 py-3 rounded-full font-bold transform translate-y-4 group-hover:translate-y-0 transition-transform">
+                     Claim Deal
+                   </button>
+                 </Link>
+              </div>
+              <div className="flex-grow">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-serif font-bold text-xl">{product.name}</h3>
+                </div>
+                <div className="flex items-center space-x-3 mb-4">
+                  <span className="text-2xl font-black text-brand-onyx">₦{product.dealPrice.toLocaleString()}</span>
+                  <span className="text-sm text-brand-slate line-through">₦{product.price.toLocaleString()}</span>
+                </div>
+                <p className="text-sm text-brand-slate font-light line-clamp-2 leading-relaxed mb-6">
+                  {product.description}
+                </p>
+                <div className="mt-auto flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-brand-slate/40">
+                  <span>{product.stock} items left</span>
+                  <div className="w-32 h-1 bg-brand-onyx/5 rounded-full overflow-hidden">
+                    <div className="h-full bg-brand-copper w-1/4" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Deal Bundles */}
+      <div className="max-w-7xl mx-auto px-6 mb-32">
+        <div className="bg-brand-alabaster rounded-[4rem] p-12 md:p-24">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+            <div>
+              <span className="text-brand-copper uppercase tracking-[0.4em] text-[10px] font-black mb-6 block">Bundle Exclusive</span>
+              <h2 className="text-5xl md:text-6xl font-serif font-bold mb-8 leading-tight">The Heritage Living Room Set</h2>
+              <p className="text-xl text-brand-slate font-light leading-relaxed mb-12">
+                Procure the entire curated set and unlock an additional 15% discount. 
+                Our most significant saving ever on handcrafted velvet and teak.
+              </p>
+              <div className="flex items-center space-x-12 mb-12">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-brand-slate mb-2">Retail Total</p>
+                  <p className="text-2xl text-brand-slate line-through">₦850,000</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-brand-copper mb-2">Special Offer</p>
+                  <p className="text-5xl font-black text-brand-onyx">₦610,000</p>
+                </div>
+              </div>
+              <Link to="/bundles/b2">
+                <button className="bg-brand-onyx text-white px-12 py-5 rounded-full font-bold hover:bg-brand-copper transition-all shadow-xl">
+                  Shop the Collection
+                </button>
+              </Link>
+            </div>
+            <div className="aspect-square rounded-[3rem] overflow-hidden shadow-2xl">
+              <img 
+                src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=2070&auto=format&fit=crop" 
+                alt="Bundle Deal" 
+                className="w-full h-full object-cover" 
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function B2BPortal() {
+  const { showToast } = useCart();
+  const [inquiryType, setInquiryType] = useState('Hospitality');
+  const [formData, setFormData] = useState({
+    company: '',
+    email: '',
+    message: ''
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    showToast("Application submitted. An specialist will reach out within 24 hours.");
+    setFormData({ company: '', email: '', message: '' });
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="pt-24 sm:pt-40 pb-24"
+    >
+      {/* Hero Section */}
+      <div className="max-w-7xl mx-auto px-6 mb-32">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+          <div>
+            <span className="text-brand-copper uppercase tracking-[0.4em] text-[10px] font-black mb-6 block">KASADA FOR BUSINESS</span>
+            <h1 className="text-6xl md:text-8xl font-serif font-bold mb-8 leading-tight">Scale Your <br/>Interior Vision.</h1>
+            <p className="text-xl text-brand-slate font-light leading-relaxed mb-12">
+              From boutique hotels to sustainable corporate headquarters, we provide high-volume, 
+              handcrafted furniture built to endure Nigeria's climate and corporate rigors.
+            </p>
+            <div className="flex flex-wrap gap-6">
+              <a href="#inquiry" className="bg-brand-onyx text-white px-10 py-5 rounded-full font-bold hover:bg-brand-copper transition-all shadow-xl">
+                Start Bulk Inquiry
+              </a>
+              <div className="flex items-center space-x-4 px-8 py-5 border border-brand-onyx/10 rounded-full">
+                <ShieldCheck className="text-brand-copper" size={24} />
+                <span className="text-sm font-bold uppercase tracking-widest">Trade Certified</span>
+              </div>
+            </div>
+          </div>
+          <div className="relative">
+            <div className="aspect-[4/3] rounded-[3rem] overflow-hidden shadow-2xl">
+              <img 
+                src="https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop" 
+                alt="B2B Workspace" 
+                className="w-full h-full object-cover" 
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            <div className="absolute -bottom-12 -left-12 bg-white p-8 rounded-[2rem] shadow-2xl hidden md:block max-w-xs border border-brand-onyx/5">
+              <p className="text-brand-copper font-serif font-bold text-lg mb-2">"KASADA transformed our office into a cultural landmark."</p>
+              <p className="text-xs text-brand-slate font-bold uppercase tracking-widest">— CEO, Eko Tech Hub</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Services Grid */}
+      <div className="bg-brand-onyx py-32 mb-32">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-24">
+            <h2 className="text-4xl md:text-6xl font-serif font-bold text-white mb-8">Tailored Industry Solutions</h2>
+            <p className="text-white/60 text-lg max-w-2xl mx-auto font-light">
+              We understand the unique demands of professional environments. 
+              Our B2B partners enjoy tiered pricing and logistics priority.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            {[
+              { 
+                title: 'Hospitality', 
+                icon: Star, 
+                desc: 'Bespoke suites for hotels and airbnbs that demand durability without sacrificing artisanal soul.',
+                image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2070&auto=format&fit=crop'
+              },
+              { 
+                title: 'Corporate', 
+                icon: Box, 
+                desc: 'Productivity-first workstations and boardrooms designed for the modern African enterprise.',
+                image: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2070&auto=format&fit=crop'
+              },
+              { 
+                title: 'Real Estate', 
+                icon: ShieldCheck, 
+                desc: 'Turnkey interior packages for property developers looking to elevate their valuation.',
+                image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop'
+              }
+            ].map((service) => (
+              <div key={service.title} className="group cursor-pointer">
+                <div className="aspect-[4/5] rounded-[2.5rem] overflow-hidden mb-8 shadow-xl relative">
+                  <img src={service.image} alt={service.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
+                  <div className="absolute inset-0 bg-brand-onyx/40 flex items-center justify-center scale-0 group-hover:scale-100 transition-transform duration-500">
+                    <button className="bg-white text-brand-onyx px-8 py-3 rounded-full font-bold">Request Specs</button>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-4 mb-4">
+                  <service.icon className="text-brand-copper" size={24} />
+                  <h3 className="text-2xl font-serif font-bold text-white uppercase tracking-wider">{service.title}</h3>
+                </div>
+                <p className="text-white/50 leading-relaxed font-light">{service.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Trade Benefits */}
+      <div className="max-w-7xl mx-auto px-6 mb-32">
+        <div className="bg-brand-onyx/5 rounded-[3rem] p-12 md:p-24 grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+          <div>
+            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-12">The Trade Advantage</h2>
+            <div className="space-y-12">
+              <div className="flex gap-8">
+                <div className="w-16 h-16 rounded-2xl bg-brand-copper/10 text-brand-copper flex items-center justify-center shrink-0">
+                  <Gift size={32} />
+                </div>
+                <div>
+                  <h4 className="text-xl font-bold mb-2">Volume Discounts</h4>
+                  <p className="text-brand-slate font-light leading-relaxed">Save up to 35% on multi-unit procurement and recurring projects.</p>
+                </div>
+              </div>
+              <div className="flex gap-8">
+                <div className="w-16 h-16 rounded-2xl bg-brand-copper/10 text-brand-copper flex items-center justify-center shrink-0">
+                  <Truck size={32} />
+                </div>
+                <div>
+                  <h4 className="text-xl font-bold mb-2">Priority Logistics</h4>
+                  <p className="text-brand-slate font-light leading-relaxed">Nationwide delivery with dedicated project management and on-site assembly.</p>
+                </div>
+              </div>
+              <div className="flex gap-8">
+                <div className="w-16 h-16 rounded-2xl bg-brand-copper/10 text-brand-copper flex items-center justify-center shrink-0">
+                  <Zap size={32} />
+                </div>
+                <div>
+                  <h4 className="text-xl font-bold mb-2">CAD/3D Assets</h4>
+                  <p className="text-brand-slate font-light leading-relaxed">Instant access to high-fidelity models for your architectural visualizations.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div id="inquiry" className="bg-white p-12 rounded-[2.5rem] shadow-2xl border border-brand-onyx/5">
+            <h3 className="text-2xl font-serif font-bold mb-8">B2B Inquiry</h3>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-brand-slate mb-2">Select Sector</label>
+                <div className="flex gap-3">
+                  {['Hospitality', 'Corporate', 'Residential'].map(t => (
+                    <button 
+                      key={t}
+                      type="button"
+                      onClick={() => setInquiryType(t)}
+                      className={cn(
+                        "px-4 py-2 rounded-full text-[10px] uppercase font-black tracking-widest transition-all",
+                        inquiryType === t ? "bg-brand-copper text-white" : "bg-brand-onyx/5 text-brand-slate"
+                      )}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-brand-slate mb-2">Company Name</label>
+                <input 
+                  required
+                  type="text" 
+                  value={formData.company}
+                  onChange={(e) => setFormData({...formData, company: e.target.value})}
+                  className="w-full bg-brand-onyx/5 border-none rounded-2xl py-4 px-6 focus:ring-2 focus:ring-brand-copper" 
+                  placeholder="e.g. Radisson Blu"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-brand-slate mb-2">Business Email</label>
+                <input 
+                  required
+                  type="email" 
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  className="w-full bg-brand-onyx/5 border-none rounded-2xl py-4 px-6 focus:ring-2 focus:ring-brand-copper" 
+                  placeholder="procurement@company.ng"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-brand-slate mb-2">Project Brief</label>
+                <textarea 
+                  required
+                  rows={4}
+                  value={formData.message}
+                  onChange={(e) => setFormData({...formData, message: e.target.value})}
+                  className="w-full bg-brand-onyx/5 border-none rounded-2xl py-4 px-6 focus:ring-2 focus:ring-brand-copper" 
+                  placeholder="Tell us about your space and requirements..."
+                />
+              </div>
+              <button className="w-full bg-brand-onyx text-white py-5 rounded-full font-bold hover:bg-brand-copper transition-all shadow-xl">
+                Submit Application
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function Designers() {
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="pt-40 pb-24"
+    >
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="mb-24 flex flex-col md:flex-row md:items-end justify-between gap-12">
+          <div className="max-w-2xl">
+            <span className="text-brand-copper uppercase tracking-[0.4em] text-[10px] font-black mb-6 block">The Collective</span>
+            <h1 className="text-6xl md:text-8xl font-serif font-bold mb-8 leading-tight">Meet the <br/>Visionaries.</h1>
+            <p className="text-xl text-brand-slate font-light leading-relaxed">
+              KASADA is a home for the continent's most daring furniture designers. 
+              We partner with artisans who bridge the gap between ancient heritage and modern luxury.
+            </p>
+          </div>
+          <div className="hidden md:block">
+            <div className="w-32 h-32 rounded-full border border-brand-onyx/10 flex items-center justify-center p-4">
+              <Sparkles className="text-brand-copper" size={48} />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-40">
+          {DESIGNERS.map((designer, idx) => (
+            <motion.div 
+              key={designer.id}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1, delay: idx * 0.2 }}
+              className={cn(
+                "flex flex-col gap-12 md:gap-24",
+                idx % 2 === 1 ? "md:flex-row-reverse" : "md:flex-row"
+              )}
+            >
+              <div className="flex-1">
+                <div className="aspect-[3/4] overflow-hidden rounded-[3rem] shadow-2xl relative group">
+                  <img 
+                    src={designer.image} 
+                    alt={designer.name} 
+                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-0 bg-brand-onyx/20 group-hover:bg-brand-onyx/0 transition-colors duration-500" />
+                </div>
+              </div>
+
+              <div className="flex-1 flex flex-col justify-center">
+                <div className="mb-12">
+                  <div className="flex flex-wrap gap-3 mb-8">
+                    {designer.styles.map(style => (
+                      <span key={style} className="px-4 py-1.5 rounded-full border border-brand-onyx/10 text-[10px] uppercase font-black tracking-widest text-brand-slate">
+                        {style}
+                      </span>
+                    ))}
+                  </div>
+                  <h2 className="text-4xl md:text-6xl font-serif font-bold mb-8">{designer.name}</h2>
+                  <p className="text-xl text-brand-slate font-light leading-relaxed mb-12">
+                    {designer.bio}
+                  </p>
+                </div>
+
+                <div className="bg-brand-onyx/5 p-12 rounded-[2.5rem]">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-brand-slate mb-8 pb-4 border-b border-brand-onyx/5">Notable Works</h3>
+                  <div className="space-y-4">
+                    {designer.notableWorks.map(work => (
+                      <div key={work} className="flex items-center space-x-4">
+                        <div className="w-2 h-2 rounded-full bg-brand-copper" />
+                        <span className="text-lg font-serif italic text-brand-onyx">{work}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <button className="mt-12 group flex items-center space-x-4 text-brand-copper font-bold hover:text-brand-onyx transition-colors">
+                  <span>View Designer Portfolio</span>
+                  <ArrowRight size={20} className="transition-transform group-hover:translate-x-2" />
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function OrderHistory() {
+  const { user } = useAuth();
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const q = query(
+      collection(db, 'orders'),
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      setOrders(docs);
+      setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'orders');
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  if (loading) return <div className="pt-40 text-center">Loading your orders...</div>;
+  if (!user) return <div className="pt-40 text-center">Please login to view your orders.</div>;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="pt-40 pb-24 px-6 max-w-7xl mx-auto"
+    >
+      <h1 className="text-5xl font-serif font-bold mb-16">Order History</h1>
+      <div className="space-y-8">
+        {orders.map((order) => (
+          <div key={order.id} className="bg-brand-onyx/5 rounded-[2.5rem] p-8 md:p-12 overflow-hidden border border-brand-onyx/5">
+            <div className="flex flex-col md:flex-row justify-between mb-12 gap-6">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-brand-copper mb-2">Order ID</p>
+                <p className="font-mono text-xs text-brand-onyx/40">#{order.id.slice(-8).toUpperCase()}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-brand-slate mb-2">Date</p>
+                <p className="font-bold">{order.createdAt?.toDate().toLocaleDateString()}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-brand-slate mb-2">Status</p>
+                <div className="flex items-center space-x-2 text-green-500">
+                  <CheckCircle2 size={16} />
+                  <span className="font-bold uppercase text-[10px] tracking-widest">{order.status}</span>
+                </div>
+              </div>
+              <div className="text-right flex flex-col items-end">
+                <p className="text-[10px] font-black uppercase tracking-widest text-brand-slate mb-2">Total Amount</p>
+                <p className="text-3xl font-black text-brand-onyx">₦{order.totalAmount.toLocaleString()}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-8 border-t border-brand-onyx/5">
+              {order.items.map((item: any, idx: number) => {
+                const product = PRODUCTS.find(p => p.id === item.productId);
+                return (
+                  <div key={idx} className="flex items-center space-x-6">
+                    <img 
+                      src={product?.images[0]} 
+                      alt={product?.name} 
+                      className="w-20 h-20 object-cover rounded-2xl" 
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="w-full">
+                      <h4 className="font-bold text-sm truncate w-40">{product?.name}</h4>
+                      <p className="text-xs text-brand-slate">Qty: {item.quantity}</p>
+                      <p className="text-xs font-black">₦{((product?.price || 0) * item.quantity).toLocaleString()}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+
+        {orders.length === 0 && (
+          <div className="text-center py-24 bg-brand-onyx/5 rounded-[3rem]">
+            <Box size={48} className="mx-auto text-brand-slate/20 mb-6" />
+            <p className="text-xl text-brand-slate font-light italic">No orders found.</p>
+            <Link to="/collections" className="mt-8 inline-block text-brand-copper font-bold hover:underline">Start Shopping</Link>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
 function BespokePortal() {
   const [user, setUser] = useState<User | null>(null);
   const [requests, setRequests] = useState<any[]>([]);
@@ -2629,16 +3233,17 @@ export default function App() {
                   <Route path="/bundles" element={<Bundles />} />
                   <Route path="/bundles/:id" element={<BundleDetail />} />
                   <Route path="/product/:id" element={<ProductDetail />} />
-                  <Route path="/deals" element={<PrototypePage title="Exclusive Deals" description="Limited time offers on our most coveted handcrafted pieces." />} />
+                  <Route path="/deals" element={<ExclusiveDeals />} />
                   <Route path="/room-visualizer" element={<PrototypePage title="Room Visualizer" description="Experience our furniture in your own space using AR and 3D modeling." />} />
                   <Route path="/search" element={<SearchPage />} />
-                  <Route path="/designers" element={<PrototypePage title="Our Designers" description="Meet the visionaries behind Nigeria's most iconic contemporary furniture." />} />
-                  <Route path="/b2b" element={<PrototypePage title="KASADA for Business" description="Tailored solutions for hotels, offices, and large-scale residential projects." />} />
+                  <Route path="/designers" element={<Designers />} />
+                  <Route path="/b2b" element={<B2BPortal />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/wishlist" element={<WishlistPage />} />
                   <Route path="/bespoke" element={<BespokePortal />} />
                   <Route path="/loyalty" element={<LoyaltyDashboard />} />
+                  <Route path="/orders" element={<OrderHistory />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/shipping" element={<PrototypePage title="Shipping & Logistics" description="Transparent, trackable delivery for bulky items across all 36 states." />} />
                   <Route path="/returns" element={<PrototypePage title="Returns & Escrow" description="Our 7-day inspection period ensures you only pay for what you love." />} />

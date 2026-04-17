@@ -1,4 +1,4 @@
-import { Product, Category, Bundle } from './types';
+import { Product, Category, Bundle, Designer } from './types';
 
 export const CATEGORIES: Category[] = [
   {
@@ -455,5 +455,32 @@ export const BUNDLES: Bundle[] = [
     image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=2070&auto=format&fit=crop',
     productIds: ['p10', 'p8'],
     category: 'Living Room'
+  }
+];
+
+export const DESIGNERS: Designer[] = [
+  {
+    id: 'd1',
+    name: 'Amina Yusuf',
+    bio: 'A visionary in contemporary African minimalism, Amina fuses traditional Sahelian geometric patterns with ultra-modern silhouettes. Her work has been featured in international design biennials.',
+    image: 'https://images.unsplash.com/photo-1589156280159-27698a70f29e?q=80&w=1974&auto=format&fit=crop',
+    styles: ['Minimalist', 'Sahelian'],
+    notableWorks: ['The Sahara Suite', 'Zaria Lamp Series']
+  },
+  {
+    id: 'd2',
+    name: 'Koffi Mensah',
+    bio: 'A master of sculptural hardwoods, Koffi specializes in reclaimed Iroko and Sapele. His designs bridge the gap between functional furniture and fine art.',
+    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop',
+    styles: ['Sculptural', 'Brutalist'],
+    notableWorks: ['The Monolith Table', 'Accra Lounge Chair']
+  },
+  {
+    id: 'd3',
+    name: 'Zuri Okocha',
+    bio: 'Zuri is a pioneer in textile integration. By fusing hand-woven Aso-Oke with geometric metal frames, she creates pieces that are tactile, vibrant, and culturally rich.',
+    image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1976&auto=format&fit=crop',
+    styles: ['Textile-Forward', 'Industrial'],
+    notableWorks: ['Indigo Bench', 'Loom Armchair']
   }
 ];
