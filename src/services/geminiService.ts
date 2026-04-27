@@ -3,7 +3,13 @@ import { Product } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
+const recommendationsCache = new Map<string, Product[]>();
+
 export async function getCompleteTheLook(currentProduct: Product, allProducts: Product[]): Promise<Product[]> {
+  if (recommendationsCache.has(currentProduct.id)) {
+    return recommendationsCache.get(currentProduct.id)!;
+  }
+
   try {
     const otherProducts = allProducts.filter(p => p.id !== currentProduct.id);
     
@@ -26,7 +32,7 @@ export async function getCompleteTheLook(currentProduct: Product, allProducts: P
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash-latest",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -40,12 +46,15 @@ export async function getCompleteTheLook(currentProduct: Product, allProducts: P
     });
 
     const recommendedIds: string[] = JSON.parse(response.text || "[]");
-    return otherProducts.filter(p => recommendedIds.includes(p.id));
+    const recs = otherProducts.filter(p => recommendedIds.includes(p.id));
+    recommendationsCache.set(currentProduct.id, recs);
+    return recs;
   } catch (error) {
     console.error("Error getting AI recommendations:", error);
     // Fallback to simple category matching if AI fails
-    return allProducts
+    const fallback = allProducts
       .filter(p => p.id !== currentProduct.id && p.category === currentProduct.category)
       .slice(0, 3);
+    return fallback;
   }
 }

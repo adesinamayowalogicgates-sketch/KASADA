@@ -9,6 +9,7 @@ export interface Product {
   images: string[];
   isMadeInNigeria: boolean;
   hasAssemblyService: boolean;
+  assemblyCost?: number;
   isEscrowProtected: boolean;
   installmentOptions?: string[];
   seller: {

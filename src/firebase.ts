@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
@@ -26,16 +27,60 @@ import {
   getDocs,
   Timestamp,
   arrayUnion,
-  arrayRemove
+  arrayRemove,
+  initializeFirestore
 } from 'firebase/firestore';
-import firebaseConfig from '../firebase-applet-config.json';
+// Import config from environment variables
+const firebaseConfig = {
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+};
+
+const rawDatabaseId = import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID;
+
+// Sanitize database ID to remove common prefixes like "Use: " and illegal characters
+const sanitizeDatabaseId = (id: string | undefined): string | undefined => {
+  if (!id) return undefined;
+  // Remove "Use: ", "Database: ", etc. and anything after whitespace
+  let clean = id.toString().replace(/^(Use|Database|ID)\s*:\s*/i, '').trim().split(/\s/)[0];
+  // Strip anything that isn't a lowercase letter, number, or hyphen
+  clean = clean.toLowerCase().replace(/[^a-z0-9-]/g, '');
+  return clean || undefined;
+};
+
+const firestoreDatabaseId = sanitizeDatabaseId(rawDatabaseId);
+
+// Log missing variables (safely)
+const missingVars = Object.entries(firebaseConfig)
+  .filter(([_, value]) => !value)
+  .map(([key]) => key);
+
+if (!firestoreDatabaseId) missingVars.push('VITE_FIREBASE_FIRESTORE_DATABASE_ID');
+
+if (missingVars.length > 0) {
+  console.error("Missing Firebase environment variables: ", missingVars.join(", "));
+}
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 // Ensure persistence is set
 setPersistence(auth, browserLocalPersistence);
 
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+import { handleFirestoreError as handleFirestoreErrorUtil, OperationType } from './lib/firebaseUtils';
+
+// Force long polling for environments with restrictive network rules
+const firestoreSettings = {
+  experimentalForceLongPolling: true,
+  useFetchStreams: false // More stable in some iframe/sandbox environments
+};
+
+export const db = firestoreDatabaseId 
+  ? initializeFirestore(app, firestoreSettings, firestoreDatabaseId)
+  : initializeFirestore(app, firestoreSettings);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
@@ -43,57 +88,12 @@ googleProvider.setCustomParameters({ prompt: 'select_account' });
 export const loginWithGoogle = () => signInWithPopup(auth, googleProvider);
 export const logout = () => signOut(auth);
 
-// Firestore Error Handler
-export enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
-}
-
-export interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId: string | undefined;
-    email: string | null | undefined;
-    emailVerified: boolean | undefined;
-    isAnonymous: boolean | undefined;
-    tenantId: string | null | undefined;
-    providerInfo: {
-      providerId: string;
-      displayName: string | null;
-      email: string | null;
-      photoUrl: string | null;
-    }[];
-  }
-}
-
+// Firestore Error Handler Wrapper
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData.map(provider => ({
-        providerId: provider.providerId,
-        displayName: provider.displayName,
-        email: provider.email,
-        photoUrl: provider.photoURL
-      })) || []
-    },
-    operationType,
-    path
-  };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  return handleFirestoreErrorUtil(error, operationType, path, auth);
 }
+
+export { OperationType };
 
 // Connection Test
 async function testConnection() {

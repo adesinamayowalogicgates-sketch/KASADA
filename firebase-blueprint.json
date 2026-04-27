@@ -102,6 +102,21 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "items", "totalAmount", "status", "createdAt"]
+    },
+    "B2BInquiry": {
+      "title": "B2B Inquiry",
+      "description": "A business inquiry for bulk furniture.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "company": { "type": "string" },
+        "email": { "type": "string" },
+        "sector": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "contacted", "closed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["company", "email", "sector", "message", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -124,6 +139,10 @@
     "/orders/{orderId}": {
       "schema": "Order",
       "description": "Collection of completed user orders."
+    },
+    "/b2b_inquiries/{inquiryId}": {
+      "schema": "B2BInquiry",
+      "description": "Collection of B2B business inquiries."
     }
   }
 }

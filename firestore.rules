@@ -62,7 +62,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() &&
-             (request.auth.token.email == "adesinamayowa.logicgates@gmail.com" && request.auth.token.email_verified == true);
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
     function isValidBespokeRequest(data) {
@@ -79,18 +79,20 @@ service cloud.firestore {
              (!('attachments' in data) || data.attachments is list);
     }
 
+    function isValidB2BInquiry(data) {
+      return data.keys().hasAll(['company', 'email', 'sector', 'message', 'status', 'createdAt']) &&
+             data.company is string && data.company.size() > 0 && data.company.size() <= 200 &&
+             data.email is string && data.email.size() > 0 && data.email.size() <= 200 &&
+             data.sector is string && data.sector.size() > 0 && data.sector.size() <= 100 &&
+             data.message is string && data.message.size() > 0 && data.message.size() <= 5000 &&
+             data.status in ['pending', 'contacted', 'closed'] &&
+             data.createdAt is timestamp &&
+             (!('userId' in data) || data.userId is string);
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
-
-    function isValidOrder(data) {
-      return data.keys().hasAll(['userId', 'items', 'totalAmount', 'status', 'createdAt']) &&
-             data.userId is string &&
-             data.items is list && data.items.size() > 0 &&
-             data.totalAmount is number && data.totalAmount >= 0 &&
-             data.status is string &&
-             data.createdAt is timestamp;
-    }
 
     match /wishlists/{wishlistId} {
       allow read: if isCollaborator(resource.data);
@@ -128,22 +130,27 @@ service cloud.firestore {
     }
 
     match /loyalty_profiles/{userId} {
-      allow read: if isAuthenticated() && request.auth.uid == userId;
-      // In a real app, only system/admin writes. For demo, we allow initial creation.
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create, update, delete: if isAdmin();
     }
 
     match /loyalty_transactions/{transactionId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create, update, delete: if isAdmin();
     }
 
     match /orders/{orderId} {
       allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isAuthenticated() && 
-                      isValidOrder(request.resource.data) &&
-                      request.resource.data.userId == request.auth.uid &&
+      // Creation restricted to Server/Admin only
+      allow create: if false;
+      allow update, delete: if isAdmin();
+    }
+
+    match /b2b_inquiries/{inquiryId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isValidB2BInquiry(request.resource.data) &&
+                      (!('userId' in request.resource.data) || request.resource.data.userId == request.auth.uid) &&
+                      request.resource.data.status == 'pending' &&
                       isRecent(request.resource.data.createdAt);
       allow update, delete: if isAdmin();
     }

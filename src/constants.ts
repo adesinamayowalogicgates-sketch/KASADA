@@ -53,6 +53,7 @@ export const PRODUCTS: Product[] = [
     ],
     isMadeInNigeria: true,
     hasAssemblyService: true,
+    assemblyCost: 5000,
     isEscrowProtected: true,
     installmentOptions: ['CredPal', 'Carbon'],
     seller: {
@@ -85,6 +86,7 @@ export const PRODUCTS: Product[] = [
     ],
     isMadeInNigeria: true,
     hasAssemblyService: true,
+    assemblyCost: 15000,
     isEscrowProtected: true,
     installmentOptions: ['CredPal'],
     seller: {
@@ -117,6 +119,7 @@ export const PRODUCTS: Product[] = [
     ],
     isMadeInNigeria: true,
     hasAssemblyService: true,
+    assemblyCost: 25000,
     isEscrowProtected: true,
     seller: {
       name: 'Local Artisan Collective',
@@ -179,6 +182,7 @@ export const PRODUCTS: Product[] = [
     ],
     isMadeInNigeria: true,
     hasAssemblyService: true,
+    assemblyCost: 3500,
     isEscrowProtected: true,
     seller: {
       name: 'Eco-Artisans',
@@ -210,6 +214,7 @@ export const PRODUCTS: Product[] = [
     ],
     isMadeInNigeria: true,
     hasAssemblyService: true,
+    assemblyCost: 12000,
     isEscrowProtected: true,
     installmentOptions: ['CredPal'],
     seller: {
@@ -365,6 +370,7 @@ export const PRODUCTS: Product[] = [
     ],
     isMadeInNigeria: true,
     hasAssemblyService: true,
+    assemblyCost: 15000,
     isEscrowProtected: true,
     seller: {
       name: 'Plateau Pine Works',
@@ -422,7 +428,7 @@ export const BUNDLES: Bundle[] = [
     description: 'A complete home office setup for the modern professional. Includes the Amakisi Work Table, Zaria Bookshelf, and a premium ergonomic chair.',
     price: 255000,
     discountPrice: 220000,
-    image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop',
+    image: 'https://i.imgur.com/7rkjmR9.jpg',
     productIds: ['p1', 'p5'],
     category: 'Office'
   },
@@ -432,7 +438,7 @@ export const BUNDLES: Bundle[] = [
     description: 'Transform your living space with this luxurious velvet and teak collection. Includes the Lekki Velvet Sofa, Eko Lounge Chair, and Kano Leather Ottoman.',
     price: 680000,
     discountPrice: 610000,
-    image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=2070&auto=format&fit=crop',
+    image: 'https://i.imgur.com/YfE8HiE.jpg',
     productIds: ['p2', 'p4', 'p7'],
     category: 'Living Room'
   },
@@ -442,7 +448,7 @@ export const BUNDLES: Bundle[] = [
     description: 'A serene and natural bedroom setup inspired by the mountains. Includes the Obudu Bed Frame and matching side tables.',
     price: 390000,
     discountPrice: 350000,
-    image: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=2071&auto=format&fit=crop',
+    image: 'https://i.imgur.com/rsxWl2P.jpg',
     productIds: ['p6', 'p8'],
     category: 'Bedroom'
   },
@@ -452,7 +458,7 @@ export const BUNDLES: Bundle[] = [
     description: 'Bring the relaxed vibe of the coast into your home. Includes the Calabar Cane Armchair and the Ibadan Rattan Side Table.',
     price: 180000,
     discountPrice: 155000,
-    image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=2070&auto=format&fit=crop',
+    image: 'https://i.imgur.com/hFLEfZ7.jpg',
     productIds: ['p10', 'p8'],
     category: 'Living Room'
   }

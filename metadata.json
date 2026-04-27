@@ -1,5 +1,5 @@
 {
-  "name": "KASADA",
-  "description": "A premium furniture ecommerce platform built for the Nigerian consumer, featuring curated collections, trust-anchored logistics, and room visualization.",
-  "requestFramePermissions": []
+  "name": "KASADA Furniture",
+  "description": "Premium Nigerian handcrafted furniture marketplace bridging local artisans with modern homes.",
+  "requestFramePermissions": ["camera"]
 }
