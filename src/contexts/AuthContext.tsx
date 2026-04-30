@@ -25,8 +25,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
-      // Expose auth to window for global error handler if needed
-      (window as any).firebaseAuth = auth;
     });
     return () => unsubscribe();
   }, []);

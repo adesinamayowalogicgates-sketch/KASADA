@@ -11,9 +11,10 @@ import {
   Truck,
   Sparkles
 } from 'lucide-react';
-import { useCart } from '../contexts/CartContext';
+import { useCart, CartItem } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { PRODUCTS } from '../constants';
+import { Product } from '../types';
 import { cn } from '../lib/utils';
 
 const Cart: React.FC = () => {
@@ -22,10 +23,10 @@ const Cart: React.FC = () => {
     const navigate = useNavigate();
     const [isCheckingOut, setIsCheckingOut] = useState(false);
   
-    const cartProducts = cart.map(item => ({
-      ...item,
-      product: PRODUCTS.find(p => p.id === item.productId)!
-    })).filter(item => item.product !== undefined);
+    const cartProducts = cart.map(item => {
+      const product = PRODUCTS.find(p => p.id === item.productId);
+      return product ? { ...item, product } : null;
+    }).filter((item): item is (CartItem & { product: Product }) => item !== null);
   
     const subtotal = cartProducts.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
     const assemblyTotal = cartProducts.reduce((acc, item) => acc + (item.assembly ? (item.product.assemblyCost || 0) * item.quantity : 0), 0);

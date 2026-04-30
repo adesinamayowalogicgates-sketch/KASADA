@@ -1,4 +1,4 @@
-import { Product, Category, Bundle, Designer } from './types';
+import { Product, Category, Bundle, Designer } from './types.ts';
 
 export const CATEGORIES: Category[] = [
   {
@@ -70,7 +70,8 @@ export const PRODUCTS: Product[] = [
       unit: 'cm'
     },
     stock: 15,
-    deliverySLA: '3-5 business days'
+    deliverySLA: '3-5 business days',
+    model3d: 'https://modelviewer.dev/shared-assets/models/glTF-Sample-Assets/Models/SheenChair/glTF-Binary/SheenChair.glb'
   },
   {
     id: 'p2',
@@ -103,7 +104,8 @@ export const PRODUCTS: Product[] = [
       unit: 'cm'
     },
     stock: 5,
-    deliverySLA: '7-10 business days'
+    deliverySLA: '7-10 business days',
+    model3d: 'https://modelviewer.dev/shared-assets/models/glTF-Sample-Assets/Models/Chair/glTF-Binary/Chair.glb'
   },
   {
     id: 'p3',
@@ -135,7 +137,8 @@ export const PRODUCTS: Product[] = [
       unit: 'cm'
     },
     stock: 2,
-    deliverySLA: '14 business days'
+    deliverySLA: '14 business days',
+    model3d: 'https://modelviewer.dev/shared-assets/models/Chair.glb'
   },
   {
     id: 'p4',
@@ -166,7 +169,8 @@ export const PRODUCTS: Product[] = [
       unit: 'cm'
     },
     stock: 8,
-    deliverySLA: '5 business days'
+    deliverySLA: '5 business days',
+    model3d: 'https://modelviewer.dev/shared-assets/models/RobotExpressive.glb'
   },
   {
     id: 'p5',

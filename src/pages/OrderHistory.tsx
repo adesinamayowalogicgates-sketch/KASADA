@@ -13,11 +13,12 @@ import {
   query, 
   where, 
   onSnapshot, 
-  orderBy 
+  orderBy,
+  Timestamp 
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { handleFirestoreError, OperationType } from '../lib/firebaseUtils';
+import { useCart } from '../contexts/CartContext';
 import { cn } from '../lib/utils';
 
 interface OrderItem {
@@ -30,13 +31,14 @@ interface OrderItem {
 interface Order {
   id: string;
   items: OrderItem[];
-  total: number;
+  totalAmount: number;
   status: 'Processing' | 'In Transit' | 'Delivered' | 'Cancelled';
-  createdAt: any;
+  createdAt: Timestamp;
 }
 
 const OrderHistory: React.FC = () => {
     const { user } = useAuth();
+    const { showToast } = useCart();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
   
@@ -60,8 +62,6 @@ const OrderHistory: React.FC = () => {
   
       return () => unsubscribe();
     }, [user]);
-  
-    if (!user) return <div className="pt-40 text-center">Please sign in to view your legacy transactions.</div>;
   
     return (
       <motion.div 
@@ -117,7 +117,7 @@ const OrderHistory: React.FC = () => {
                   </div>
                   <div className="text-left md:text-right">
                     <p className="text-[10px] font-black uppercase tracking-widest text-brand-slate mb-1">Amount</p>
-                    <p className="text-3xl font-serif font-bold">₦{order.total.toLocaleString()}</p>
+                    <p className="text-3xl font-serif font-bold">₦{order.totalAmount.toLocaleString()}</p>
                   </div>
                 </div>
   
@@ -147,7 +147,10 @@ const OrderHistory: React.FC = () => {
                         <ShieldCheck className="text-brand-copper" size={18} />
                         <span>Verified by Artisanal Escrow</span>
                     </div>
-                    <button className="w-full mt-4 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-brand-onyx hover:text-brand-copper transition-colors group/btn">
+                    <button 
+                        onClick={() => showToast(`Generating PDF Invoice for order #${order.id.toUpperCase()}...`)}
+                        className="w-full mt-4 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-brand-onyx hover:text-brand-copper transition-colors group/btn"
+                    >
                         <span>View Full Invoice</span>
                         <ChevronRight size={16} className="group-hover/btn:translate-x-2 transition-transform" />
                     </button>

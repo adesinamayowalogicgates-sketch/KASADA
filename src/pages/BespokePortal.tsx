@@ -21,10 +21,9 @@ import {
   doc, 
   Timestamp 
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
-import { handleFirestoreError, OperationType } from '../lib/firebaseUtils';
 import { cn } from '../lib/utils';
 
 interface BespokeProject {
@@ -104,16 +103,6 @@ const BespokePortal: React.FC = () => {
         }
       }
     };
-  
-    if (!user) {
-      return (
-        <div className="pt-40 pb-24 px-6 text-center max-w-2xl mx-auto">
-          <h1 className="text-4xl font-serif font-bold mb-8">Bespoke Portal</h1>
-          <p className="text-brand-slate mb-8">Please sign in to start your custom furniture journey.</p>
-          <button className="bg-brand-onyx text-white px-12 py-4 rounded-full font-bold">Sign In</button>
-        </div>
-      );
-    }
   
     return (
       <motion.div 
@@ -249,7 +238,7 @@ const BespokePortal: React.FC = () => {
                           <button 
                             onClick={() => {
                               const message = `Hello KASADA, I'd like to discuss my bespoke project: ${project.title}.`;
-                              window.open(`https://wa.me/2340000000?text=${encodeURIComponent(message)}`, '_blank');
+                              window.open(`https://wa.me/2348123456789?text=${encodeURIComponent(message)}`, '_blank');
                             }}
                             className="bg-brand-onyx text-white p-5 rounded-3xl hover:bg-brand-copper transition-colors"
                           >
@@ -297,7 +286,25 @@ const BespokePortal: React.FC = () => {
                 <p className="text-brand-slate text-sm font-light leading-relaxed mb-8">
                   Need help defining your concept or picking materials? Our design consultants are available for direct consultation.
                 </p>
-                <button className="flex items-center space-x-3 text-[10px] font-black uppercase tracking-widest text-brand-copper hover:text-brand-onyx transition-colors">
+                <button 
+                  onClick={async () => {
+                    if (!user) return;
+                    try {
+                      await addDoc(collection(db, 'callback_requests'), {
+                        userId: user.uid,
+                        userEmail: user.email,
+                        userName: user.displayName || 'Client',
+                        type: 'Bespoke Consultation',
+                        status: 'pending',
+                        createdAt: Timestamp.now()
+                      });
+                      showToast("Callback requested. We'll be in touch shortly.");
+                    } catch (error) {
+                      handleFirestoreError(error, OperationType.CREATE, 'callback_requests');
+                    }
+                  }}
+                  className="flex items-center space-x-3 text-[10px] font-black uppercase tracking-widest text-brand-copper hover:text-brand-onyx transition-colors"
+                >
                   <CheckCircle2 size={16} />
                   <span>Request Callback</span>
                 </button>

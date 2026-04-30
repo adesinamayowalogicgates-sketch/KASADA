@@ -14,22 +14,11 @@ import {
   getFirestore, 
   collection, 
   doc, 
-  addDoc, 
-  setDoc,
-  updateDoc, 
-  deleteDoc, 
-  onSnapshot, 
-  query, 
-  where, 
-  or,
-  orderBy,
   getDocFromServer,
-  getDocs,
-  Timestamp,
-  arrayUnion,
-  arrayRemove,
   initializeFirestore
 } from 'firebase/firestore';
+import { handleFirestoreError as handleFirestoreErrorUtil, OperationType } from './lib/firebaseUtils';
+
 // Import config from environment variables
 const firebaseConfig = {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
@@ -70,8 +59,6 @@ export const auth = getAuth(app);
 // Ensure persistence is set
 setPersistence(auth, browserLocalPersistence);
 
-import { handleFirestoreError as handleFirestoreErrorUtil, OperationType } from './lib/firebaseUtils';
-
 // Force long polling for environments with restrictive network rules
 const firestoreSettings = {
   experimentalForceLongPolling: true,
@@ -106,22 +93,3 @@ async function testConnection() {
   }
 }
 testConnection();
-
-export { 
-  collection, 
-  doc, 
-  addDoc, 
-  setDoc,
-  updateDoc, 
-  deleteDoc, 
-  onSnapshot, 
-  getDocs,
-  query, 
-  where, 
-  or,
-  orderBy,
-  Timestamp,
-  arrayUnion,
-  arrayRemove
-};
-export type { User };

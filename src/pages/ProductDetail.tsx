@@ -24,7 +24,7 @@ import { cn } from '../lib/utils';
 
 const ProductDetail: React.FC = () => {
   const { id } = useParams();
-  const product = PRODUCTS.find(p => p.id === id);
+  const [product, setProduct] = useState<Product | undefined>(() => PRODUCTS.find(p => p.id === id));
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [addAssembly, setAddAssembly] = useState(false);
@@ -40,6 +40,16 @@ const ProductDetail: React.FC = () => {
     window.scrollTo(0, 0);
     setSelectedImage(0);
     
+    // Fetch live product data for real stock
+    if (id) {
+      fetch(`/api/products/${id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data.error) setProduct(data);
+        })
+        .catch(err => console.error("Error fetching live product:", err));
+    }
+
     if (product) {
       setIsLoadingRecs(true);
       getCompleteTheLook(product, PRODUCTS).then(recs => {
@@ -47,7 +57,7 @@ const ProductDetail: React.FC = () => {
         setIsLoadingRecs(false);
       });
     }
-  }, [id, product]);
+  }, [id]); // Only re-run when ID changes
 
   if (!product) return <div className="pt-32 text-center text-brand-onyx font-serif text-2xl">Product not found</div>;
 
@@ -135,10 +145,23 @@ const ProductDetail: React.FC = () => {
               </div>
             )}
 
-            <p className="text-brand-slate text-base sm:text-lg font-light leading-relaxed mb-8 sm:mb-12">
+            <p className="text-brand-slate text-base sm:text-lg font-light leading-relaxed mb-4 sm:mb-6">
               {product.description}
             </p>
             
+            <div className="mb-8 flex items-center space-x-3">
+              <div className={cn(
+                "w-2 h-2 rounded-full",
+                product.stock > 5 ? "bg-green-500" : (product.stock > 0 ? "bg-amber-500" : "bg-red-500")
+              )} />
+              <span className={cn(
+                "text-[10px] font-black uppercase tracking-widest",
+                product.stock > 5 ? "text-green-600" : (product.stock > 0 ? "text-amber-600" : "text-red-600")
+              )}>
+                {product.stock > 5 ? "In Stock • Ships in 48h" : (product.stock > 0 ? `Limited Stock • ${product.stock} left` : "Out of Stock")}
+              </span>
+            </div>
+
             <div className="grid grid-cols-2 gap-6 sm:gap-8 p-6 sm:p-8 bg-brand-onyx/5 rounded-[2rem] mb-8 sm:mb-12">
               <div>
                 <p className="text-[10px] uppercase tracking-widest font-black text-brand-slate mb-2">Material</p>
@@ -195,9 +218,10 @@ const ProductDetail: React.FC = () => {
               </div>
               <button 
                 onClick={() => addToCart(product.id, quantity, addAssembly)}
-                className="flex-grow bg-brand-onyx text-white py-4 sm:py-5 rounded-full font-bold hover:bg-brand-copper transition-all duration-500"
+                disabled={product.stock <= 0}
+                className="flex-grow bg-brand-onyx text-white py-4 sm:py-5 rounded-full font-bold hover:bg-brand-copper transition-all duration-500 disabled:opacity-50 disabled:hover:bg-brand-onyx"
               >
-                Add to Cart
+                {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
               </button>
               <button 
                 onClick={() => toggleWishlist(product.id)}
@@ -218,7 +242,7 @@ const ProductDetail: React.FC = () => {
               <button 
                 onClick={() => {
                   const message = `Hello KASADA Concierge, I'd like to track my order for ${product.name}.`;
-                  window.open(`https://wa.me/2340000000?text=${encodeURIComponent(message)}`, '_blank');
+                  window.open(`https://wa.me/2348123456789?text=${encodeURIComponent(message)}`, '_blank');
                 }}
                 className="w-full flex items-center justify-center space-x-3 text-[10px] font-black uppercase tracking-widest text-brand-slate hover:text-brand-onyx transition-colors"
               >

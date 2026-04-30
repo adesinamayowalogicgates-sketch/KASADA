@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles } from 'lucide-react';
 
-interface CartItem {
+export interface CartItem {
   productId: string;
   quantity: number;
   assembly: boolean;
@@ -19,7 +19,20 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('kasada_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch (err) {
+      console.error("Error loading cart from localStorage:", err);
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('kasada_cart', JSON.stringify(cart));
+  }, [cart]);
+
   const [toast, setToast] = useState<string | null>(null);
 
   const showToast = (message: string) => {
@@ -33,11 +46,11 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (existing) {
         return prev.map(item => 
           (item.productId === productId && item.assembly === assembly)
-            ? { ...item, quantity: item.quantity + quantity }
+            ? { ...item, quantity: Math.max(1, item.quantity + quantity) }
             : item
         );
       }
-      return [...prev, { productId, quantity, assembly }];
+      return [...prev, { productId, quantity: Math.max(1, quantity), assembly }];
     });
     showToast("Added to bag");
   };

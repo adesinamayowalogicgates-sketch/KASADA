@@ -9,10 +9,9 @@ import {
   Zap 
 } from 'lucide-react';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
-import { handleFirestoreError, OperationType } from '../lib/firebaseUtils';
 import { cn } from '../lib/utils';
 
 const B2BPortal: React.FC = () => {

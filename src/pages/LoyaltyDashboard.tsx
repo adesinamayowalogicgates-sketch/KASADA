@@ -20,19 +20,19 @@ import {
   where, 
   orderBy, 
   getDocs,
-  updateDoc
+  updateDoc,
+  Timestamp
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
-import { handleFirestoreError, OperationType } from '../lib/firebaseUtils';
 import { cn } from '../lib/utils';
 
 interface LoyaltyProfile {
   points: number;
   tier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum';
   lifetimePoints: number;
-  lastBonusAt?: any;
+  lastBonusAt?: Timestamp;
 }
 
 interface LoyaltyTransaction {
@@ -40,7 +40,7 @@ interface LoyaltyTransaction {
   amount: number;
   type: 'earn' | 'redeem' | 'bonus';
   description: string;
-  createdAt: any;
+  createdAt: Timestamp;
 }
 
 const TIER_THRESHOLDS = {
@@ -61,7 +61,10 @@ const LoyaltyDashboard: React.FC = () => {
     useEffect(() => {
       if (!user) return;
   
+      let isMounted = true;
+
       const unsubscribe = onSnapshot(doc(db, 'loyalty_profiles', user.uid), (doc) => {
+        if (!isMounted) return;
         if (doc.exists()) {
           const data = doc.data() as LoyaltyProfile;
           setProfile(data);
@@ -83,6 +86,7 @@ const LoyaltyDashboard: React.FC = () => {
         }
         setLoading(false);
       }, (error) => {
+        if (!isMounted) return;
         console.error("Profile snapshot error:", error);
         handleFirestoreError(error, OperationType.GET, `loyalty_profiles/${user.uid}`);
         setLoading(false);
@@ -95,11 +99,15 @@ const LoyaltyDashboard: React.FC = () => {
       );
   
       getDocs(q).then(snap => {
+        if (!isMounted) return;
         const txs = snap.docs.map(d => ({ id: d.id, ...d.data() } as LoyaltyTransaction));
         setTransactions(txs);
       });
   
-      return () => unsubscribe();
+      return () => {
+        isMounted = false;
+        unsubscribe();
+      };
     }, [user]);
   
     const claimDailyBonus = async () => {
@@ -149,12 +157,6 @@ const LoyaltyDashboard: React.FC = () => {
         }
     };
   
-    if (!user) return (
-        <div className="pt-40 text-center px-6">
-            <h1 className="text-4xl font-serif font-bold mb-8">Loyalty Dashboard</h1>
-            <p className="text-brand-slate">Please sign in to access your rewards.</p>
-        </div>
-    );
     if (loading) return <div className="pt-40 text-center">Loading your legacy...</div>;
   
     const tierConfig = {
@@ -329,7 +331,14 @@ const LoyaltyDashboard: React.FC = () => {
               <p className="text-sm font-light text-brand-slate leading-relaxed mb-8">
                 Share the KASADA heritage. You both get <span className="font-bold text-brand-onyx">1,000 pts</span> when they make their first purchase above ₦100k.
               </p>
-              <button className="text-[10px] font-black uppercase tracking-widest text-brand-copper flex items-center space-x-2">
+              <button 
+                onClick={() => {
+                  const link = `${window.location.origin}/signup?ref=${user?.uid || 'kasada'}`;
+                  navigator.clipboard.writeText(link);
+                  showToast("Referral link copied to clipboard!");
+                }}
+                className="text-[10px] font-black uppercase tracking-widest text-brand-copper flex items-center space-x-2 hover:text-brand-onyx transition-colors"
+              >
                 <span>Generate Link</span>
                 <ChevronRight size={12} />
               </button>

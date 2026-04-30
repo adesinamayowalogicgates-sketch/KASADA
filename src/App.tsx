@@ -34,6 +34,7 @@ import Support from './pages/Support';
 import About from './pages/About';
 import RoomVisualizer from './pages/RoomVisualizer';
 import NotFound from './pages/NotFound';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function AppContent() {
   const location = useLocation();
@@ -53,14 +54,14 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/about" element={<About />} />
           <Route path="/cart" element={<Cart />} />
-          <Route path="/wishlist" element={<WishlistPage />} />
-          <Route path="/loyalty" element={<LoyaltyDashboard />} />
+          <Route path="/wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
+          <Route path="/loyalty" element={<ProtectedRoute><LoyaltyDashboard /></ProtectedRoute>} />
           <Route path="/deals" element={<ExclusiveDeals />} />
-          <Route path="/b2b" element={<B2BPortal />} />
+          <Route path="/b2b" element={<ProtectedRoute><B2BPortal /></ProtectedRoute>} />
           <Route path="/designers" element={<Designers />} />
-          <Route path="/order-success" element={<OrderSuccess />} />
-          <Route path="/orders" element={<OrderHistory />} />
-          <Route path="/bespoke" element={<BespokePortal />} />
+          <Route path="/order-success" element={<ProtectedRoute><OrderSuccess /></ProtectedRoute>} />
+          <Route path="/orders" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
+          <Route path="/bespoke" element={<ProtectedRoute><BespokePortal /></ProtectedRoute>} />
           <Route path="/room-visualizer" element={<RoomVisualizer />} />
           
           {/* Prototype Pages */}

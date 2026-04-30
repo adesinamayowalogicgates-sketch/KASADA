@@ -19,13 +19,12 @@ import {
   addDoc, 
   Timestamp 
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useAuth } from '../contexts/AuthContext';
 import { PRODUCTS } from '../constants';
 import { ProductCard } from '../components/ProductCard';
 import { useCart } from '../contexts/CartContext';
-import { handleFirestoreError, OperationType } from '../lib/firebaseUtils';
 
 const WishlistPage: React.FC = () => {
     const { wishlists, loading } = useWishlist();
@@ -78,13 +77,6 @@ const WishlistPage: React.FC = () => {
         }
       }
     };
-  
-    if (!user) return (
-        <div className="pt-40 text-center px-6">
-            <h1 className="text-4xl font-serif font-bold mb-8 italic">The Curator Registry.</h1>
-            <p className="text-brand-slate mb-8 max-w-lg mx-auto">Sign in to save and collaborate on your favorite artisanal pieces from Nigeria's master designers.</p>
-        </div>
-    );
   
     return (
       <motion.div 
@@ -142,7 +134,7 @@ const WishlistPage: React.FC = () => {
         <div className="space-y-24 sm:space-y-32">
           {wishlists.map((list) => {
             const listItems = PRODUCTS.filter(p => list.itemIds.includes(p.id));
-            const isOwner = list.ownerId === user.uid;
+            const isOwner = list.ownerId === user?.uid;
             
             return (
               <div key={list.id}>
@@ -168,7 +160,20 @@ const WishlistPage: React.FC = () => {
                         <Trash2 size={18} />
                       </button>
                     )}
-                    <button className="p-4 bg-brand-onyx text-white rounded-2xl hover:bg-brand-copper transition-all">
+                    <button 
+                      onClick={async () => {
+                        const newName = prompt("Rename your wishlist:", list.name);
+                        if (newName && newName !== list.name) {
+                          try {
+                            await updateDoc(doc(db, 'wishlists', list.id), { name: newName });
+                            showToast(`Renamed to "${newName}"`);
+                          } catch (error) {
+                            handleFirestoreError(error, OperationType.UPDATE, `wishlists/${list.id}`);
+                          }
+                        }
+                      }}
+                      className="p-4 bg-brand-onyx text-white rounded-2xl hover:bg-brand-copper transition-all"
+                    >
                       <Settings2 size={18} />
                     </button>
                   </div>

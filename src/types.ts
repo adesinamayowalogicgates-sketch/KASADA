@@ -27,6 +27,7 @@ export interface Product {
   };
   stock: number;
   deliverySLA: string;
+  model3d?: string;
 }
 
 export interface Category {

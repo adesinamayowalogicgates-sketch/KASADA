@@ -1,3 +1,6 @@
+import { FirebaseError } from 'firebase/app';
+import { Auth, User } from 'firebase/auth';
+
 export enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',
@@ -20,17 +23,19 @@ export interface FirestoreErrorInfo {
   }
 }
 
-export function handleFirestoreError(error: any, operationType: OperationType, path: string | null = null, auth?: any) {
+export function handleFirestoreError(error: FirebaseError | any, operationType: OperationType, path: string | null = null, auth?: Auth) {
+  const currentUser = auth?.currentUser;
+  
   const errorInfo: FirestoreErrorInfo = {
     error: error.message || String(error),
     operationType,
     path,
     authInfo: {
-      userId: auth?.currentUser?.uid || 'anonymous',
-      email: auth?.currentUser?.email || 'none',
-      emailVerified: auth?.currentUser?.emailVerified || false,
-      isAnonymous: auth?.currentUser?.isAnonymous || true,
-      providerInfo: auth?.currentUser?.providerData?.map((p: any) => ({
+      userId: currentUser?.uid || 'anonymous',
+      email: currentUser?.email || 'none',
+      emailVerified: currentUser?.emailVerified || false,
+      isAnonymous: currentUser?.isAnonymous || true,
+      providerInfo: currentUser?.providerData?.map((p) => ({
         providerId: p.providerId,
         displayName: p.displayName || '',
         email: p.email || ''

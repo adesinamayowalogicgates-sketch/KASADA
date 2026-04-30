@@ -1,16 +1,31 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
+// import { createServer as createViteServer } from "vite"; // Removed top-level import to avoid production crash
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from 'fs';
 import 'dotenv/config';
-import { PRODUCTS, BUNDLES } from "./src/constants";
+import { PRODUCTS, BUNDLES } from "./src/constants.ts";
 import admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
+import { GoogleGenAI, Type } from "@google/genai";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Initialize Gemini AI
+let aiClient: GoogleGenAI | null = null;
+function getGeminiClient() {
+  if (!aiClient) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.warn("GEMINI_API_KEY is missing. AI features will use fallback logic.");
+      return null;
+    }
+    aiClient = new GoogleGenAI({ apiKey });
+  }
+  return aiClient;
+}
 
 // Initialize Firebase Admin
 let db: admin.firestore.Firestore | null = null;
@@ -19,8 +34,8 @@ let auth: admin.auth.Auth | null = null;
 function initializeFirebase() {
   if (db && auth) return { db, auth };
 
-  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY || process.env.VITE_FIREBASE_SERVICE_ACCOUNT_KEY;
-  let databaseId = process.env.FIREBASE_FIRESTORE_DATABASE_ID || process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID;
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  let databaseId = process.env.FIREBASE_FIRESTORE_DATABASE_ID;
   
   if (!serviceAccountKey) {
     console.warn("FIREBASE_SERVICE_ACCOUNT_KEY is missing. Check your Settings > Secrets panel.");
@@ -62,15 +77,36 @@ function initializeFirebase() {
     }
     
     // Use getFirestore and getAuth from sub-modules for reliable multi-db and auth support
-    // @ts-ignore
-    db = databaseId ? getFirestore(databaseId) : getFirestore();
+    db = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
     auth = getAuth(app);
     
     console.log(`Firebase Admin initialized successfully (Database: ${databaseId || '(default)'}).`);
+    
+    // Seed products if needed
+    seedProducts(db);
+    
     return { db, auth };
   } catch (error) {
     console.error("Failed to initialize Firebase Admin:", error);
     return null;
+  }
+}
+
+async function seedProducts(db: admin.firestore.Firestore) {
+  try {
+    const productsSnapshot = await db.collection('products').limit(1).get();
+    if (productsSnapshot.empty) {
+      console.log("Seeding products to Firestore...");
+      const batch = db.batch();
+      PRODUCTS.forEach(product => {
+        const productRef = db.collection('products').doc(product.id);
+        batch.set(productRef, product);
+      });
+      await batch.commit();
+      console.log("Product seeding complete.");
+    }
+  } catch (error) {
+    console.error("Error seeding products:", error);
   }
 }
 
@@ -81,6 +117,37 @@ async function startServer() {
   app.use(express.json());
 
   // API Routes
+  app.get("/api/products", async (req, res) => {
+    const firebase = initializeFirebase();
+    if (!firebase) return res.status(500).json({ error: "Server error" });
+    
+    try {
+      const snapshot = await firebase.db.collection('products').get();
+      const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      res.json(products);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch products" });
+    }
+  });
+
+  app.get("/api/products/:id", async (req, res) => {
+    const firebase = initializeFirebase();
+    if (!firebase) return res.status(500).json({ error: "Server error" });
+    
+    try {
+      const doc = await firebase.db.collection('products').doc(req.params.id).get();
+      if (!doc.exists) {
+        // Try static data as fallback
+        const staticProduct = PRODUCTS.find(p => p.id === req.params.id);
+        if (staticProduct) return res.json(staticProduct);
+        return res.status(404).json({ error: "Product not found" });
+      }
+      res.json({ id: doc.id, ...doc.data() });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch product" });
+    }
+  });
+
   app.post("/api/checkout", async (req, res) => {
     const firebase = initializeFirebase();
     if (!firebase) {
@@ -98,81 +165,108 @@ async function startServer() {
       const decodedToken = await firebase.auth.verifyIdToken(idToken);
       const userId = decodedToken.uid;
 
-      // 2. Validate Prices and Calculate Total Server-Side
-      let subtotal = 0;
-      const validatedItems = items.map((item: any) => {
-        // Find in Products
-        let itemPrice = 0;
-        let itemName = '';
-        let assemblyFee = 0;
-
-        const product = PRODUCTS.find(p => p.id === item.productId);
-        const bundle = BUNDLES.find(b => b.id === item.productId);
-
-        if (product) {
-          itemPrice = product.price;
-          itemName = product.name;
-          assemblyFee = product.assemblyCost || 0;
-        } else if (bundle) {
-          itemPrice = bundle.discountPrice || bundle.price;
-          itemName = bundle.name;
-          assemblyFee = 0; 
-        } else {
-          throw new Error(`Product or Bundle ${item.productId} not found`);
-        }
-
-        // Validate Quantity
-        const quantity = parseInt(item.quantity);
-        if (isNaN(quantity) || quantity <= 0) {
-          throw new Error(`Invalid quantity for ${itemName}`);
-        }
-
-        const itemSubtotal = itemPrice * quantity;
-        const assemblyCost = item.assembly ? assemblyFee * quantity : 0;
-        
-        subtotal += itemSubtotal + assemblyCost;
-
-        return {
-          productId: item.productId,
-          quantity: quantity,
-          priceAtTime: itemPrice,
-          assembly: !!item.assembly,
-          assemblyCostAtTime: item.assembly ? assemblyFee : 0
-        };
-      });
-
-      // 3. Include Delivery and Verification
-      const deliveryFee = subtotal > 500000 ? 0 : 25000;
-      const finalTotal = subtotal + deliveryFee;
-
-      // Price Mismatch Check (Protection against stale UI prices or man-in-the-middle)
-      if (clientTotal !== undefined && Math.abs(clientTotal - finalTotal) > 1) { 
-        throw new Error(`Price mismatch detected. Please refresh your cart. (Expected: ₦${finalTotal.toLocaleString()})`);
-      }
-
-      // 4. Prepare references and data
+      // 2. Prepare Order and Loyalty Data
       const orderRef = firebase.db.collection('orders').doc();
       const loyaltyTxRef = firebase.db.collection('loyalty_transactions').doc();
       const profileRef = firebase.db.collection('loyalty_profiles').doc(userId);
-      const pointsEarned = Math.floor(subtotal / 1000); // Loyalty points on products, not delivery
+      
+      // 3. Atomic Transaction for Order + Loyalty + Stock
+      const result = await firebase.db.runTransaction(async (transaction) => {
+        let subtotal = 0;
+        const validatedItems = [];
+        const stockUpdates = [];
 
-      const orderData = {
-        userId,
-        items: validatedItems,
-        subtotal,
-        deliveryFee,
-        totalAmount: finalTotal,
-        status: 'Confirmed',
-        createdAt: admin.firestore.Timestamp.now(),
-        shippingAddress: shippingAddress || 'Concierge Managed'
-      };
+        for (const item of items) {
+          const productRef = firebase.db.collection('products').doc(item.productId);
+          const bundleRef = firebase.db.collection('bundles').doc(item.productId); // Bundles might not be in DB yet, but let's check products first
+          
+          const productDoc = await transaction.get(productRef);
+          
+          let itemPrice = 0;
+          let itemName = '';
+          let assemblyFee = 0;
+          let availableStock = 0;
 
-      // 4. Atomic Transaction for Order + Loyalty
-      await firebase.db.runTransaction(async (transaction) => {
+          if (productDoc.exists) {
+            const product = productDoc.data()!;
+            itemPrice = product.price;
+            itemName = product.name;
+            assemblyFee = product.assemblyCost || 0;
+            availableStock = product.stock || 0;
+          } else {
+            // Fallback to static constants for evaluation if not in DB (bundles etc.)
+            const staticProduct = PRODUCTS.find(p => p.id === item.productId);
+            const staticBundle = BUNDLES.find(b => b.id === item.productId);
+
+            if (staticProduct) {
+              itemPrice = staticProduct.price;
+              itemName = staticProduct.name;
+              assemblyFee = staticProduct.assemblyCost || 0;
+              availableStock = staticProduct.stock || 0;
+            } else if (staticBundle) {
+              itemPrice = staticBundle.discountPrice || staticBundle.price;
+              itemName = staticBundle.name;
+              assemblyFee = 0;
+              availableStock = 999; // Bundles have virtual stock usually
+            } else {
+              throw new Error(`Product or Bundle ${item.productId} not found`);
+            }
+          }
+
+          const quantity = parseInt(item.quantity);
+          if (isNaN(quantity) || quantity <= 0) {
+            throw new Error(`Invalid quantity for ${itemName}`);
+          }
+
+          if (availableStock < quantity) {
+            throw new Error(`Insufficient stock for ${itemName}. Only ${availableStock} left.`);
+          }
+
+          const itemSubtotal = itemPrice * quantity;
+          const assemblyCost = item.assembly ? assemblyFee * quantity : 0;
+          subtotal += itemSubtotal + assemblyCost;
+
+          validatedItems.push({
+            productId: item.productId,
+            name: itemName,
+            quantity: quantity,
+            price: itemPrice,
+            assembly: !!item.assembly,
+            assemblyCost: item.assembly ? assemblyFee : 0
+          });
+
+          // Queue stock decrement if it was a real product in DB
+          if (productDoc.exists) {
+            stockUpdates.push({ ref: productRef, newStock: availableStock - quantity });
+          }
+        }
+
+        const deliveryFee = subtotal > 500000 ? 0 : 25000;
+        const finalTotal = subtotal + deliveryFee;
+
+        if (clientTotal !== undefined && Math.abs(clientTotal - finalTotal) > 1) { 
+          throw new Error(`Price mismatch detected. Please refresh your cart. (Expected: ₦${finalTotal.toLocaleString()})`);
+        }
+
+        const pointsEarned = Math.floor(subtotal / 1000);
         const profileDoc = await transaction.get(profileRef);
 
+        // Apply Stock Updates
+        stockUpdates.forEach(update => {
+          transaction.update(update.ref, { stock: update.newStock });
+        });
+
         // Set Order
-        transaction.set(orderRef, orderData);
+        transaction.set(orderRef, {
+          userId,
+          items: validatedItems,
+          subtotal,
+          deliveryFee,
+          totalAmount: finalTotal,
+          status: 'Processing',
+          createdAt: admin.firestore.Timestamp.now(),
+          shippingAddress: shippingAddress || 'Concierge Managed'
+        });
 
         // Set Loyalty Transaction
         transaction.set(loyaltyTxRef, {
@@ -187,7 +281,7 @@ async function startServer() {
         if (!profileDoc.exists) {
           transaction.set(profileRef, {
             userId,
-            points: 500 + pointsEarned, // Welcome bonus + earned
+            points: 500 + pointsEarned,
             tier: 'Bronze',
             lifetimePoints: 500 + pointsEarned,
             updatedAt: admin.firestore.Timestamp.now()
@@ -209,9 +303,11 @@ async function startServer() {
             updatedAt: admin.firestore.Timestamp.now()
           });
         }
+
+        return { success: true, orderId: orderRef.id };
       });
 
-      res.json({ success: true, orderId: orderRef.id });
+      res.json(result);
 
     } catch (error: any) {
       console.error("Checkout error:", error);
@@ -356,8 +452,80 @@ async function startServer() {
     }
   });
 
+  // AI Recommendations API
+  app.post("/api/ai/complete-the-look", async (req, res) => {
+    const { productId } = req.body;
+    if (!productId) {
+      return res.status(400).json({ error: "Missing productId" });
+    }
+
+    const currentProduct = PRODUCTS.find(p => p.id === productId);
+    if (!currentProduct) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    const ai = getGeminiClient();
+    if (!ai) {
+      // Fallback if no API key
+      const fallback = PRODUCTS
+        .filter(p => p.id !== productId && p.category === currentProduct.category)
+        .slice(0, 3)
+        .map(p => p.id);
+      return res.json({ recommendedIds: fallback });
+    }
+
+    try {
+      const otherProducts = PRODUCTS.filter(p => p.id !== productId);
+      
+      const prompt = `
+        You are a high-end interior designer for KASADA, a luxury Nigerian furniture brand.
+        A customer is currently viewing the following product:
+        Name: ${currentProduct.name}
+        Category: ${currentProduct.category}
+        Material: ${currentProduct.material}
+        Style: ${currentProduct.style}
+        Description: ${currentProduct.description}
+
+        Based on this product, select exactly 3 complementary products from the list below that would "Complete the Look" for a cohesive room design.
+        Consider style, material compatibility, and functional pairing (e.g., if it's a bed, suggest a nightstand or dresser).
+
+        Available Products:
+        ${otherProducts.map(p => `ID: ${p.id}, Name: ${p.name}, Category: ${p.category}, Style: ${p.style}`).join('\n')}
+
+        Return only the IDs of the 3 selected products in a JSON array.
+      `;
+
+      const result = await ai.models.generateContent({
+        model: "gemini-1.5-flash-latest",
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.STRING
+            }
+          }
+        }
+      });
+
+      const text = result.text || "[]";
+      const recommendedIds = JSON.parse(text || "[]");
+      res.json({ recommendedIds });
+    } catch (error: any) {
+      console.error("Gemini AI Error:", error);
+      // Fallback
+      const fallback = PRODUCTS
+        .filter(p => p.id !== productId && p.category === currentProduct.category)
+        .slice(0, 3)
+        .map(p => p.id);
+      res.json({ recommendedIds: fallback });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
