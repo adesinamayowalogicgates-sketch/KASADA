@@ -88,7 +88,7 @@ const Designers: React.FC = () => {
                     searchParams.set('designer', designer.name);
                     navigate(`/search?${searchParams.toString()}`);
                   }}
-                  className="mt-12 group flex items-center space-x-4 text-brand-copper font-bold hover:text-brand-onyx transition-colors"
+                  className="mt-12 group flex items-center space-x-4 text-brand-copper font-bold hover:text-brand-onyx transition-colors active:scale-95 origin-left"
                 >
                   <span>View Designer Portfolio</span>
                   <ArrowRight size={20} className="transition-transform group-hover:translate-x-2" />

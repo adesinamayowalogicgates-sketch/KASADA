@@ -33,8 +33,8 @@ const Collections: React.FC = () => {
               className={cn(
                 "px-6 sm:px-8 py-2 sm:py-3 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all",
                 (categoryFilter === cat || (!categoryFilter && cat === 'All')) 
-                  ? "bg-brand-onyx text-white" 
-                  : "bg-brand-onyx/5 text-brand-slate hover:bg-brand-onyx/10"
+                  ? "bg-brand-onyx text-white active:scale-95" 
+                  : "bg-brand-onyx/5 text-brand-slate hover:bg-brand-onyx/10 active:scale-95"
               )}
             >
               {cat}

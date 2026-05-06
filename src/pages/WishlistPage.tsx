@@ -32,6 +32,11 @@ const WishlistPage: React.FC = () => {
     const { showToast } = useCart();
     const [isCreating, setIsCreating] = useState(false);
     const [newListName, setNewListName] = useState('');
+    const [editingListId, setEditingListId] = useState<string | null>(null);
+    const [sharingListId, setSharingListId] = useState<string | null>(null);
+    const [deletingListId, setDeletingListId] = useState<string | null>(null);
+    const [editName, setEditName] = useState('');
+    const [shareEmail, setShareEmail] = useState('');
   
     const handleCreateList = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -53,28 +58,42 @@ const WishlistPage: React.FC = () => {
       }
     };
   
-    const shareList = async (listId: string) => {
-      const email = prompt("Enter the email of the person you'd like to collaborate with:");
-      if (email && email.includes('@')) {
+    const shareList = async (e: React.FormEvent, listId: string) => {
+      e.preventDefault();
+      if (shareEmail && shareEmail.includes('@')) {
         try {
           await updateDoc(doc(db, 'wishlists', listId), {
-            collaboratorEmails: arrayUnion(email.toLowerCase())
+            collaboratorEmails: arrayUnion(shareEmail.toLowerCase())
           });
-          showToast(`Shared with ${email}`);
+          showToast(`Shared with ${shareEmail}`);
+          setSharingListId(null);
+          setShareEmail('');
         } catch (error) {
           handleFirestoreError(error, OperationType.UPDATE, `wishlists/${listId}`);
         }
       }
     };
   
-    const deleteList = async (listId: string, name: string) => {
-      if (confirm(`Delete "${name}"?`)) {
+    const handleRename = async (e: React.FormEvent, listId: string) => {
+      e.preventDefault();
+      if (editName && editName.trim()) {
         try {
-          await deleteDoc(doc(db, 'wishlists', listId));
-          showToast(`Wishlist "${name}" deleted`);
+          await updateDoc(doc(db, 'wishlists', listId), { name: editName });
+          showToast(`Renamed to "${editName}"`);
+          setEditingListId(null);
         } catch (error) {
-          handleFirestoreError(error, OperationType.DELETE, `wishlists/${listId}`);
+          handleFirestoreError(error, OperationType.UPDATE, `wishlists/${listId}`);
         }
+      }
+    };
+
+    const deleteList = async (listId: string, name: string) => {
+      try {
+        await deleteDoc(doc(db, 'wishlists', listId));
+        showToast(`Wishlist "${name}" deleted`);
+        setDeletingListId(null);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `wishlists/${listId}`);
       }
     };
   
@@ -139,38 +158,91 @@ const WishlistPage: React.FC = () => {
             return (
               <div key={list.id}>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 sm:mb-16 gap-6 sm:gap-8">
-                  <div>
-                    <h2 className="text-3xl sm:text-5xl font-serif font-bold mb-4 flex items-center gap-4">
-                        <span>{list.name}</span>
-                        {list.collaboratorEmails.length > 1 && <Users size={24} className="text-brand-copper" />}
-                    </h2>
-                    <p className="text-brand-slate text-[10px] font-black uppercase tracking-widest flex items-center space-x-3">
-                      <span>{listItems.length} {listItems.length === 1 ? 'Piece' : 'Pieces'}</span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand-onyx/10" />
-                      <span>{isOwner ? 'Your Collection' : `Shared by ${list.ownerEmail}`}</span>
-                    </p>
+                  <div className="flex-grow w-full md:w-auto">
+                    {editingListId === list.id ? (
+                      <form 
+                        onSubmit={(e) => handleRename(e, list.id)}
+                        className="flex items-center gap-4 w-full max-w-xl"
+                      >
+                         <input 
+                          autoFocus
+                          value={editName}
+                          onChange={e => setEditName(e.target.value)}
+                          className="flex-grow bg-transparent border-b-2 border-brand-copper py-2 text-3xl font-serif italic focus:outline-none"
+                        />
+                        <button type="submit" className="text-[10px] font-black uppercase tracking-widest text-brand-copper">Save</button>
+                        <button type="button" onClick={() => setEditingListId(null)} className="text-[10px] font-black uppercase tracking-widest text-brand-slate">Cancel</button>
+                      </form>
+                    ) : (
+                      <>
+                        <h2 className="text-3xl sm:text-5xl font-serif font-bold mb-4 flex items-center gap-4">
+                            <span>{list.name}</span>
+                            {list.collaboratorEmails.length > 1 && <Users size={24} className="text-brand-copper" />}
+                        </h2>
+                        <p className="text-brand-slate text-[10px] font-black uppercase tracking-widest flex items-center space-x-3">
+                          <span>{listItems.length} {listItems.length === 1 ? 'Piece' : 'Pieces'}</span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-brand-onyx/10" />
+                          <span>{isOwner ? 'Your Collection' : `Shared by ${list.ownerEmail}`}</span>
+                        </p>
+                      </>
+                    )}
                   </div>
-                  <div className="flex space-x-4">
-                    <button onClick={() => shareList(list.id)} className="p-4 bg-brand-onyx/5 rounded-2xl text-brand-onyx hover:bg-brand-onyx hover:text-white transition-all flex items-center space-x-3">
-                      <Share2 size={18} />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Share</span>
-                    </button>
-                    {isOwner && (
-                      <button onClick={() => deleteList(list.id, list.name)} className="p-4 bg-red-50 rounded-2xl text-red-500 hover:bg-red-500 hover:text-white transition-all">
+                  <div className="flex flex-wrap gap-4">
+                    {sharingListId === list.id ? (
+                      <motion.form 
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        onSubmit={(e) => shareList(e, list.id)}
+                        className="flex items-center gap-4 bg-brand-onyx p-2 pl-6 rounded-2xl text-white"
+                      >
+                        <input 
+                          autoFocus
+                          type="email"
+                          required
+                          placeholder="Collaborator email"
+                          value={shareEmail}
+                          onChange={e => setShareEmail(e.target.value)}
+                          className="bg-transparent border-none py-2 text-xs focus:outline-none placeholder:text-white/30"
+                        />
+                        <button type="submit" className="bg-white text-brand-onyx px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">Share</button>
+                        <button type="button" onClick={() => setSharingListId(null)} className="p-2 text-white/50 hover:text-white"><X size={16} /></button>
+                      </motion.form>
+                    ) : (
+                      <button 
+                        onClick={() => {
+                          setSharingListId(list.id);
+                          setShareEmail('');
+                        }} 
+                        className="p-4 bg-brand-onyx/5 rounded-2xl text-brand-onyx hover:bg-brand-onyx hover:text-white transition-all flex items-center space-x-3"
+                      >
+                        <Share2 size={18} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Share</span>
+                      </button>
+                    )}
+
+                    {deletingListId === list.id ? (
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="flex items-center gap-4 bg-red-500 text-white p-2 pl-6 rounded-2xl"
+                      >
+                        <span className="text-[10px] font-black uppercase tracking-widest">Confirm Delete?</span>
+                        <button onClick={() => deleteList(list.id, list.name)} className="bg-white text-red-500 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">Yes</button>
+                        <button onClick={() => setDeletingListId(null)} className="p-2 text-white/50 hover:text-white"><X size={16} /></button>
+                      </motion.div>
+                    ) : isOwner && (
+                      <button 
+                        onClick={() => setDeletingListId(list.id)} 
+                        className="p-4 bg-red-50 rounded-2xl text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                      >
                         <Trash2 size={18} />
                       </button>
                     )}
+
                     <button 
-                      onClick={async () => {
-                        const newName = prompt("Rename your wishlist:", list.name);
-                        if (newName && newName !== list.name) {
-                          try {
-                            await updateDoc(doc(db, 'wishlists', list.id), { name: newName });
-                            showToast(`Renamed to "${newName}"`);
-                          } catch (error) {
-                            handleFirestoreError(error, OperationType.UPDATE, `wishlists/${list.id}`);
-                          }
-                        }
+                      onClick={() => {
+                        setEditingListId(list.id);
+                        setEditName(list.name);
                       }}
                       className="p-4 bg-brand-onyx text-white rounded-2xl hover:bg-brand-copper transition-all"
                     >

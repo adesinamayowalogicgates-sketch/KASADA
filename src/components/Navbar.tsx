@@ -31,6 +31,17 @@ export const Navbar: React.FC = () => {
   
     useEffect(() => setIsMobileMenuOpen(false), [location]);
   
+    useEffect(() => {
+      if (isMobileMenuOpen) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = 'unset';
+      }
+      return () => {
+        document.body.style.overflow = 'unset';
+      };
+    }, [isMobileMenuOpen]);
+
     const wishlistItemCount = wishlists.reduce((acc, list) => acc + list.itemIds.length, 0);
   
     const navLinks = [
@@ -92,7 +103,7 @@ export const Navbar: React.FC = () => {
             <Link 
               to={user ? "/loyalty" : "/login"} 
               className={cn(
-                "hidden sm:flex items-center space-x-3 px-6 py-2.5 rounded-full border transition-all duration-500",
+                "hidden sm:flex items-center space-x-3 px-6 py-2.5 rounded-full border transition-all duration-500 active:scale-95",
                 isScrolled ? "border-brand-onyx/10 bg-brand-onyx text-white" : "border-brand-onyx/20 text-brand-onyx hover:bg-brand-onyx hover:text-white"
               )}
             >
@@ -120,7 +131,7 @@ export const Navbar: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-0 bg-brand-alabaster z-50 p-8 flex flex-col"
+              className="fixed inset-0 bg-white z-[100] p-8 flex flex-col overflow-y-auto"
             >
               <div className="flex justify-between items-center mb-16">
                 <span className="text-xl font-serif font-black tracking-tighter">KASADA.</span>
@@ -132,7 +143,7 @@ export const Navbar: React.FC = () => {
                   <Link 
                     key={link.path}
                     to={link.path}
-                    className="block text-4xl font-serif font-bold text-brand-onyx"
+                    className="block text-4xl font-serif font-bold text-brand-onyx active:scale-95 origin-left transition-transform"
                   >
                     {link.name}
                   </Link>

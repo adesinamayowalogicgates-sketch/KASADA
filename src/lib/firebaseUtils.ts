@@ -23,11 +23,11 @@ export interface FirestoreErrorInfo {
   }
 }
 
-export function handleFirestoreError(error: FirebaseError | any, operationType: OperationType, path: string | null = null, auth?: Auth) {
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null = null, auth?: Auth) {
   const currentUser = auth?.currentUser;
   
   const errorInfo: FirestoreErrorInfo = {
-    error: error.message || String(error),
+    error: error instanceof Error ? error.message : String(error),
     operationType,
     path,
     authInfo: {

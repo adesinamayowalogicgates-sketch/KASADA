@@ -30,13 +30,13 @@ export const Hero: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-center gap-6">
               <Link 
                 to="/collections" 
-                className="w-full sm:w-auto bg-brand-onyx text-white px-10 py-5 rounded-full font-bold text-center hover:bg-brand-copper transition-all duration-500 shadow-xl"
+                className="w-full sm:w-auto bg-brand-onyx text-white px-10 py-5 rounded-full font-bold text-center hover:bg-brand-copper active:scale-95 transition-all duration-500 shadow-xl"
               >
                 Shop the Collection
               </Link>
               <Link 
                 to="/bespoke" 
-                className="group flex items-center space-x-4 text-[10px] font-black uppercase tracking-[0.3em] hover:text-brand-copper transition-colors"
+                className="group flex items-center space-x-4 text-[10px] font-black uppercase tracking-[0.3em] hover:text-brand-copper active:scale-95 transition-colors"
               >
                 <span>Bespoke Portal</span>
                 <ArrowRight size={16} className="group-hover:translate-x-2 transition-transform" />

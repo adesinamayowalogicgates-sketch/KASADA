@@ -48,6 +48,7 @@ const BespokePortal: React.FC = () => {
       budget: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
   
     useEffect(() => {
       if (!user) return;
@@ -94,13 +95,12 @@ const BespokePortal: React.FC = () => {
     };
   
     const handleDelete = async (id: string) => {
-      if (confirm("Delete this concept?")) {
-        try {
-          await deleteDoc(doc(db, 'bespoke_requests', id));
-          showToast("Concept deleted");
-        } catch (error) {
-          handleFirestoreError(error, OperationType.DELETE, `bespoke_requests/${id}`);
-        }
+      try {
+        await deleteDoc(doc(db, 'bespoke_requests', id));
+        showToast("Concept deleted");
+        setDeletingProjectId(null);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `bespoke_requests/${id}`);
       }
     };
   
@@ -119,7 +119,7 @@ const BespokePortal: React.FC = () => {
             {!isCreating && (
               <button 
                 onClick={() => setIsCreating(true)}
-                className="group flex items-center space-x-4 bg-brand-onyx text-white px-8 sm:px-10 py-5 rounded-full font-bold hover:bg-brand-copper transition-all shadow-xl"
+                className="group flex items-center space-x-4 bg-brand-onyx text-white px-8 sm:px-10 py-5 rounded-full font-bold hover:bg-brand-copper active:scale-95 transition-all shadow-xl"
               >
                 <Plus size={20} />
                 <span>New Concept</span>
@@ -244,12 +244,27 @@ const BespokePortal: React.FC = () => {
                           >
                             <MessageSquare size={20} />
                           </button>
-                          <button 
-                            onClick={() => handleDelete(project.id)}
-                            className="bg-red-50 text-red-500 p-5 rounded-3xl hover:bg-red-500 hover:text-white transition-colors"
-                          >
-                            <Trash2 size={20} />
-                          </button>
+                          
+                          {deletingProjectId === project.id ? (
+                            <motion.div 
+                              initial={{ opacity: 0, x: 20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              className="flex items-center gap-2 bg-red-500 text-white pl-6 p-2 rounded-3xl"
+                            >
+                              <span className="text-[8px] font-black uppercase tracking-[0.2em]">Confirm?</span>
+                              <button onClick={() => handleDelete(project.id)} className="bg-white text-red-500 px-4 py-3 rounded-2xl text-[8px] font-black uppercase tracking-widest">Yes</button>
+                              <button onClick={() => setDeletingProjectId(null)} className="p-3 bg-white/20 rounded-2xl hover:bg-white/40 transition-colors">
+                                <Plus className="rotate-45" size={14} />
+                              </button>
+                            </motion.div>
+                          ) : (
+                            <button 
+                              onClick={() => setDeletingProjectId(project.id)}
+                              className="bg-red-50 text-red-500 p-5 rounded-3xl hover:bg-red-500 hover:text-white transition-colors"
+                            >
+                              <Trash2 size={20} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </motion.div>

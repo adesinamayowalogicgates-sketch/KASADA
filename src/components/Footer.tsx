@@ -20,10 +20,10 @@ export const Footer: React.FC = () => {
                 Bridging the gap between local artisans and modern homes.
               </p>
               <div className="flex justify-center md:justify-start space-x-6">
-                <Instagram size={18} className="text-white/40 hover:text-brand-copper cursor-pointer transition-colors" />
-                <Twitter size={18} className="text-white/40 hover:text-brand-copper cursor-pointer transition-colors" />
-                <Facebook size={18} className="text-white/40 hover:text-brand-copper cursor-pointer transition-colors" />
-                <Linkedin size={18} className="text-white/40 hover:text-brand-copper cursor-pointer transition-colors" />
+                <Instagram size={18} className="text-white/40 hover:text-brand-copper cursor-pointer transition-colors active:scale-125" />
+                <Twitter size={18} className="text-white/40 hover:text-brand-copper cursor-pointer transition-colors active:scale-125" />
+                <Facebook size={18} className="text-white/40 hover:text-brand-copper cursor-pointer transition-colors active:scale-125" />
+                <Linkedin size={18} className="text-white/40 hover:text-brand-copper cursor-pointer transition-colors active:scale-125" />
               </div>
             </div>
             

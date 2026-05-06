@@ -39,7 +39,7 @@ const Home: React.FC = () => {
             </div>
             <Link 
               to="/room-visualizer" 
-              className="group bg-brand-onyx text-white px-10 py-5 rounded-full font-bold flex items-center space-x-4 hover:bg-brand-copper transition-all duration-500 shadow-xl whitespace-nowrap"
+              className="group bg-brand-onyx text-white px-10 py-5 rounded-full font-bold flex items-center space-x-4 hover:bg-brand-copper active:scale-95 transition-all duration-500 shadow-xl whitespace-nowrap"
             >
               <span>Launch AR Experience</span>
               <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
@@ -108,7 +108,7 @@ const Home: React.FC = () => {
             </div>
             <Link 
               to="/deals"
-              className="mt-12 sm:mt-16 inline-flex items-center space-x-4 bg-brand-copper text-white px-8 sm:px-10 py-4 rounded-full font-bold hover:bg-white hover:text-brand-onyx transition-all duration-500"
+              className="mt-12 sm:mt-16 inline-flex items-center space-x-4 bg-brand-copper text-white px-8 sm:px-10 py-4 rounded-full font-bold hover:bg-white hover:text-brand-onyx active:scale-95 transition-all duration-500"
             >
               <span>View All Deals</span>
               <ArrowRight size={18} />
@@ -159,7 +159,7 @@ const Home: React.FC = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-brand-onyx/80 via-transparent to-transparent flex flex-col justify-end p-6 sm:p-8">
                   <h3 className="text-xl sm:text-2xl font-serif font-bold text-white mb-2">{cat.name}</h3>
-                  <p className="text-white/60 text-[10px] sm:text-xs font-light opacity-0 group-hover:opacity-100 transition-all duration-500">{cat.description}</p>
+                  <p className="text-white/60 text-[10px] sm:text-xs font-light opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-500">{cat.description}</p>
                 </div>
               </Link>
             ))}
@@ -181,7 +181,7 @@ const Home: React.FC = () => {
             </p>
             <Link 
               to="/b2b"
-              className="inline-block bg-brand-alabaster text-brand-onyx px-10 sm:px-12 py-4 sm:py-5 rounded-full font-bold hover:bg-brand-copper hover:text-white transition-all duration-500"
+              className="inline-block bg-brand-alabaster text-brand-onyx px-10 sm:px-12 py-4 sm:py-5 rounded-full font-bold hover:bg-brand-copper hover:text-white active:scale-95 transition-all duration-500"
             >
               Apply for Trade Account
             </Link>

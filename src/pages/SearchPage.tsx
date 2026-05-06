@@ -84,7 +84,7 @@ const SearchPage: React.FC = () => {
               <button 
                 key={cat}
                 onClick={() => setQuery(cat)}
-                className="p-6 sm:p-8 bg-brand-onyx/5 rounded-3xl hover:bg-brand-onyx hover:text-white transition-all duration-500 text-center group"
+                className="p-6 sm:p-8 bg-brand-onyx/5 rounded-3xl hover:bg-brand-onyx hover:text-white active:bg-brand-copper transition-all duration-500 text-center group active:scale-95"
               >
                 <span className="text-[10px] font-black uppercase tracking-widest group-hover:text-white transition-colors">{cat}</span>
               </button>

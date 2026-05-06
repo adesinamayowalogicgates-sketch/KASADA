@@ -53,23 +53,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             toggleWishlist(product.id);
           }}
           className={cn(
-            "absolute top-6 right-6 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 z-10",
+            "absolute top-6 right-6 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 z-10 active:scale-90",
             liked ? "bg-brand-copper text-white" : "bg-white/90 backdrop-blur-md text-brand-onyx hover:bg-brand-onyx hover:text-white"
           )}
         >
           <Heart size={18} className={liked ? "fill-white" : ""} />
         </button>
 
-        <div className="absolute inset-x-6 bottom-6 flex space-x-3 opacity-0 group-hover:opacity-100 transition-all duration-500">
+        <div className="absolute inset-x-6 bottom-6 flex space-x-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-500">
           <Link 
             to={`/product/${product.id}`}
-            className="flex-grow bg-white text-brand-onyx py-3 rounded-full font-bold text-xs text-center hover:bg-brand-copper hover:text-white transition-all transform translate-y-4 group-hover:translate-y-0 duration-500 delay-75"
+            className="flex-grow bg-white text-brand-onyx py-3 rounded-full font-bold text-xs text-center hover:bg-brand-copper hover:text-white transition-all transform translate-y-0 sm:translate-y-4 sm:group-hover:translate-y-0 active:scale-95 duration-500 delay-75"
           >
             Quick View
           </Link>
           <button 
             onClick={() => addToCart(product.id, 1, false)}
-            className="w-12 h-12 bg-white text-brand-onyx rounded-full flex items-center justify-center hover:bg-brand-onyx hover:text-white transition-all transform translate-y-4 group-hover:translate-y-0 duration-500 delay-150"
+            className="w-12 h-12 bg-white text-brand-onyx rounded-full flex items-center justify-center hover:bg-brand-onyx hover:text-white transition-all transform translate-y-0 sm:translate-y-4 sm:group-hover:translate-y-0 active:scale-95 duration-500 delay-150"
           >
             +
           </button>

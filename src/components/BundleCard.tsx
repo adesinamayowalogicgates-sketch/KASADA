@@ -17,7 +17,7 @@ export const BundleCard: React.FC<BundleCardProps> = ({ bundle }) => {
         viewport={{ once: true }}
         className="group"
       >
-        <Link to={`/bundles/${bundle.id}`}>
+        <Link to={`/bundles/${bundle.id}`} className="block active:scale-[0.98] transition-all">
           <div className="relative aspect-video rounded-[2.5rem] overflow-hidden mb-8 bg-brand-onyx/5">
             <img 
               src={bundle.image} 

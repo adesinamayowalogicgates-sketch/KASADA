@@ -212,20 +212,20 @@ const ProductDetail: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-6 mb-8 sm:mb-12">
               <div className="flex items-center justify-between sm:justify-start border border-brand-onyx/10 rounded-full px-4 py-2">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2 hover:text-brand-copper"><Minus size={16} /></button>
+                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2 hover:text-brand-copper active:scale-95"><Minus size={16} /></button>
                 <span className="w-12 text-center font-bold">{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)} className="p-2 hover:text-brand-copper"><Plus size={16} /></button>
+                <button onClick={() => setQuantity(quantity + 1)} className="p-2 hover:text-brand-copper active:scale-95"><Plus size={16} /></button>
               </div>
               <button 
                 onClick={() => addToCart(product.id, quantity, addAssembly)}
                 disabled={product.stock <= 0}
-                className="flex-grow bg-brand-onyx text-white py-4 sm:py-5 rounded-full font-bold hover:bg-brand-copper transition-all duration-500 disabled:opacity-50 disabled:hover:bg-brand-onyx"
+                className="flex-grow bg-brand-onyx text-white py-4 sm:py-5 rounded-full font-bold hover:bg-brand-copper active:scale-95 transition-all duration-500 disabled:opacity-50 disabled:hover:bg-brand-onyx"
               >
                 {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
               </button>
               <button 
                 onClick={() => toggleWishlist(product.id)}
-                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border border-brand-onyx/10 flex items-center justify-center hover:bg-brand-onyx/5 transition-colors"
+                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border border-brand-onyx/10 flex items-center justify-center hover:bg-brand-onyx/5 active:scale-95 transition-colors"
               >
                 <Heart size={24} className={cn(liked && "fill-brand-copper text-brand-copper transition-all")} />
               </button>
@@ -234,7 +234,7 @@ const ProductDetail: React.FC = () => {
             <div className="space-y-4 sm:space-y-6">
               <button 
                 onClick={() => navigate('/room-visualizer')}
-                className="w-full border border-brand-onyx text-brand-onyx py-4 sm:py-5 rounded-full font-bold hover:bg-brand-onyx hover:text-white transition-all flex items-center justify-center space-x-3"
+                className="w-full border border-brand-onyx text-brand-onyx py-4 sm:py-5 rounded-full font-bold hover:bg-brand-onyx hover:text-white active:scale-95 transition-all flex items-center justify-center space-x-3"
               >
                 <Smartphone size={20} />
                 <span>Try Room Visualizer (AR)</span>
@@ -244,7 +244,7 @@ const ProductDetail: React.FC = () => {
                   const message = `Hello KASADA Concierge, I'd like to track my order for ${product.name}.`;
                   window.open(`https://wa.me/2348123456789?text=${encodeURIComponent(message)}`, '_blank');
                 }}
-                className="w-full flex items-center justify-center space-x-3 text-[10px] font-black uppercase tracking-widest text-brand-slate hover:text-brand-onyx transition-colors"
+                className="w-full flex items-center justify-center space-x-3 text-[10px] font-black uppercase tracking-widest text-brand-slate hover:text-brand-onyx active:text-brand-copper transition-colors"
               >
                 <MessageSquare size={16} />
                 <span>Track Order via WhatsApp</span>

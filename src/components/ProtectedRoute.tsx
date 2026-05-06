@@ -12,7 +12,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-brand-cream">
+      <div className="min-h-screen flex items-center justify-center bg-brand-alabaster">
         <div className="w-12 h-12 border-4 border-brand-earth border-t-transparent rounded-full animate-spin"></div>
       </div>
     );

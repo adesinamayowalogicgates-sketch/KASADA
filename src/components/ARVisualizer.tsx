@@ -18,6 +18,7 @@ export const ARVisualizer: React.FC = () => {
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isModelLoading, setIsModelLoading] = useState(false);
 
   const products = PRODUCTS.slice(0, 5); // Use first 5 products for trial
 
@@ -70,6 +71,10 @@ export const ARVisualizer: React.FC = () => {
     // Reset spatial state for new product
     setScale(1);
     setRotation(0);
+    // Trigger loading state if new product has 3D
+    if (products[(selectedProductIdx + 1) % products.length].model3d) {
+      setIsModelLoading(true);
+    }
   };
 
   if (hasPermission === false) {
@@ -229,7 +234,12 @@ export const ARVisualizer: React.FC = () => {
         <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden">
           {products[selectedProductIdx].model3d ? (
             /* REAL 3D MODEL VIEW */
-            <div className="w-full h-full pointer-events-auto">
+            <div className="w-full h-full pointer-events-auto relative">
+              {isModelLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm z-10">
+                   <RefreshCw className="text-brand-copper animate-spin" size={32} />
+                </div>
+              )}
               {/* @ts-ignore */}
               <model-viewer
                 src={products[selectedProductIdx].model3d}
@@ -242,6 +252,15 @@ export const ARVisualizer: React.FC = () => {
                 exposure="1"
                 style={{ width: '100%', height: '100%', '--poster-color': 'transparent' }}
                 class="w-full h-full"
+                onLoad={() => setIsModelLoading(false)}
+                onProgress={(e: any) => {
+                  if (e.detail.totalProgress === 0) setIsModelLoading(true);
+                  if (e.detail.totalProgress === 1) setIsModelLoading(false);
+                }}
+                onError={(e: any) => {
+                  console.error("Model load error:", e);
+                  setIsModelLoading(false);
+                }}
               >
                 <div slot="ar-button" id="ar-button" className="hidden"></div>
               {/* @ts-ignore */}

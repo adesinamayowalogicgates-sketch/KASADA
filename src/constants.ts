@@ -5,14 +5,14 @@ export const CATEGORIES: Category[] = [
     id: '1',
     name: 'Living Room',
     slug: 'living-room',
-    image: 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?q=80&w=2070&auto=format&fit=crop',
+    image: 'https://i.imgur.com/2frVfXv.png',
     description: 'Sofas, coffee tables, and entertainment units.'
   },
   {
     id: '2',
     name: 'Bedroom',
     slug: 'bedroom',
-    image: 'https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=2070&auto=format&fit=crop',
+    image: 'https://i.imgur.com/3qP6o4V.png',
     description: 'Beds, wardrobes, and bedside tables.'
   },
   {
@@ -26,14 +26,14 @@ export const CATEGORIES: Category[] = [
     id: '4',
     name: 'Office',
     slug: 'office',
-    image: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?q=80&w=2070&auto=format&fit=crop',
+    image: 'https://i.imgur.com/Qsqo2yG.png',
     description: 'Desks, office chairs, and bookshelves.'
   },
   {
     id: '5',
     name: 'Decor',
     slug: 'decor',
-    image: 'https://images.unsplash.com/photo-1534073828943-f801091bb18c?q=80&w=2070&auto=format&fit=crop',
+    image: 'https://i.imgur.com/kQDXe9q.png',
     description: 'Mirrors, lighting, and artisanal accents.'
   }
 ];
@@ -48,8 +48,7 @@ export const PRODUCTS: Product[] = [
     material: 'Mahogany',
     style: 'Contemporary',
     images: [
-      'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?q=80&w=2070&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1530018607912-eff2df114f11?q=80&w=2070&auto=format&fit=crop'
+      'https://i.imgur.com/orMjYLT.png'
     ],
     isMadeInNigeria: true,
     hasAssemblyService: true,
@@ -82,8 +81,7 @@ export const PRODUCTS: Product[] = [
     material: 'Velvet, Teak',
     style: 'Modern Luxury',
     images: [
-      'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=2070&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?q=80&w=2070&auto=format&fit=crop'
+      'https://i.imgur.com/5SHwpRv.png'
     ],
     isMadeInNigeria: true,
     hasAssemblyService: true,
@@ -105,7 +103,7 @@ export const PRODUCTS: Product[] = [
     },
     stock: 5,
     deliverySLA: '7-10 business days',
-    model3d: 'https://modelviewer.dev/shared-assets/models/glTF-Sample-Assets/Models/Chair/glTF-Binary/Chair.glb'
+    model3d: 'https://modelviewer.dev/shared-assets/models/glTF-Sample-Assets/Models/SheenChair/glTF-Binary/SheenChair.glb'
   },
   {
     id: 'p3',
@@ -116,8 +114,7 @@ export const PRODUCTS: Product[] = [
     material: 'Teak',
     style: 'Traditional',
     images: [
-      'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?q=80&w=2070&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1595515106969-1ce29566ff1c?q=80&w=2070&auto=format&fit=crop'
+      'https://i.imgur.com/dvUoc9p.png'
     ],
     isMadeInNigeria: true,
     hasAssemblyService: true,
@@ -138,7 +135,7 @@ export const PRODUCTS: Product[] = [
     },
     stock: 2,
     deliverySLA: '14 business days',
-    model3d: 'https://modelviewer.dev/shared-assets/models/Chair.glb'
+    model3d: 'https://modelviewer.dev/shared-assets/models/glTF-Sample-Assets/Models/Chair/glTF-Binary/Chair.glb'
   },
   {
     id: 'p4',
@@ -149,8 +146,7 @@ export const PRODUCTS: Product[] = [
     material: 'Leather, Steel',
     style: 'Industrial',
     images: [
-      'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?q=80&w=2070&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1592078615290-033ee584e267?q=80&w=2070&auto=format&fit=crop'
+      'https://i.imgur.com/7XotXYH.png'
     ],
     isMadeInNigeria: true,
     hasAssemblyService: false,
@@ -170,7 +166,7 @@ export const PRODUCTS: Product[] = [
     },
     stock: 8,
     deliverySLA: '5 business days',
-    model3d: 'https://modelviewer.dev/shared-assets/models/RobotExpressive.glb'
+    model3d: 'https://modelviewer.dev/shared-assets/models/glTF-Sample-Assets/Models/Chair/glTF-Binary/Chair.glb'
   },
   {
     id: 'p5',
@@ -181,8 +177,7 @@ export const PRODUCTS: Product[] = [
     material: 'Bamboo',
     style: 'Minimalist',
     images: [
-      'https://images.unsplash.com/photo-1594620302200-9a762244a156?q=80&w=2070&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?q=80&w=2070&auto=format&fit=crop'
+      'https://i.imgur.com/GWqiriD.png'
     ],
     isMadeInNigeria: true,
     hasAssemblyService: true,
@@ -207,14 +202,13 @@ export const PRODUCTS: Product[] = [
   {
     id: 'p6',
     name: 'Obudu Bed Frame',
-    description: 'King-sized bed frame inspired by the Obudu mountains. Crafted from solid oak with a woven rattan headboard for a natural, airy feel.',
+    description: 'The centerpiece of a regal sanctuary. A king-sized masterpiece forged from solid Nigerian mahogany, featuring an intricate hand-woven rattan headboard. Its clean lines are accented by bespoke tribal geometric motifs, blending heritage artistry with contemporary elegance.',
     price: 320000,
     category: 'Bedroom',
-    material: 'Oak, Rattan',
-    style: 'Organic',
+    material: 'Mahogany, Rattan',
+    style: 'Modern Luxury',
     images: [
-      'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=2071&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1560448204-603b3fc33ddc?q=80&w=2070&auto=format&fit=crop'
+      'https://i.imgur.com/abTE5Xf.png'
     ],
     isMadeInNigeria: true,
     hasAssemblyService: true,
@@ -448,8 +442,8 @@ export const BUNDLES: Bundle[] = [
   },
   {
     id: 'b3',
-    name: 'Obudu Dream Bedroom',
-    description: 'A serene and natural bedroom setup inspired by the mountains. Includes the Obudu Bed Frame and matching side tables.',
+    name: 'The Obudu Grand Bedroom',
+    description: 'An curated editorial sanctuary that pairs our flagship mahogany bed frame with artisan-carved side tables. A celebration of Nigerian textures and modern minimalist luxury.',
     price: 390000,
     discountPrice: 350000,
     image: 'https://i.imgur.com/rsxWl2P.jpg',
